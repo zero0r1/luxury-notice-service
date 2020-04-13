@@ -1,0 +1,1 @@
+package com.xth.luxury.notice.domain;
