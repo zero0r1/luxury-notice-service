@@ -6,7 +6,6 @@ import cn.hutool.core.lang.Validator;
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
-import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -22,26 +21,52 @@ public class LvNoticeManager {
     @Resource
     private RestTemplate restTemplate;
     private final String sku = "N41207";
+    private final String inStock = "inStock";
+
     public final String url = "https://secure.louisvuitton.cn/ajaxsecure/getStockLevel.jsp?storeLang=zhs-cn&pageType=storelocator_section&skuIdList=" + sku + "&null&_=1586758087289";
     public String cookie = "";
     private final Integer notStock = 20;
 
     @Scheduled(cron = "0 0/10 * * * ?")
+//    @Scheduled(cron = "0/10 * * * * ?")
     public void aTask() throws InterruptedException {
+        String result = "";
 
+        this.getLouisVuittonCookies();
+        result = this.getSkuStock(result);
+        this.checkedInStockSendMail(result);
+        this.sendEmail(result);
+    }
+
+    private void checkedInStockSendMail(String result) {
+        Object inStockObj = null;
         int noStock = 0;
         try {
-            if (Validator.isEmpty(cookie) || !cookie.contains("Secure")) {
-                HttpResponse execute = HttpRequest.get("https://www.louisvuitton.cn/zhs-cn/products/pochette-accessoires-damier-azur-005868")
-                        .timeout(1000)
-                        .execute();
-                cookie = execute.getCookieStr();
+            if (JSONUtil.isJson(result)) {
+                Object skuObj = JSONUtil.parseObj(result).get(sku);
+                inStockObj = JSONUtil.parseObj(skuObj).get(this.inStock);
+            }
+            if (Validator.equal(inStockObj, true)) {
+                this.sendEmail("有货啦~~");
+                noStock = 0;
+            } else {
+                if (noStock == this.notStock) {
+                    this.sendEmail(result);
+                    noStock = 0;
+                }
+                noStock++;
             }
         } catch (Exception e) {
             this.sendEmail(e);
             Console.log(ExceptionUtil.getMessage(e));
         }
-        String result = "";
+    }
+
+    /**
+     * @param result
+     * @return
+     */
+    private String getSkuStock(String result) {
         try {
             result = HttpRequest.post(url)
                     .cookie(cookie)
@@ -54,29 +79,30 @@ public class LvNoticeManager {
             this.sendEmail(e);
             Console.log(ExceptionUtil.getMessage(e));
         }
-        Object inStock = null;
-        try {
-            JSONObject jsonObject = JSONUtil.parseObj(result);
-            Object skuObj = jsonObject.get(sku);
-            inStock = JSONUtil.parseObj(skuObj).get("inStock");
+        return result;
+    }
 
-            if (inStock.equals(true)) {
-                this.sendEmail("有货啦~~");
-                noStock = 0;
-            } else {
-                noStock++;
-                if (noStock == this.notStock) {
-                    this.sendEmail(result);
-                    noStock = 0;
-                }
-            }
-        } catch (Exception e) {
+    /**
+     *
+     */
+    private void getLouisVuittonCookies() {
+        try {
+            HttpResponse execute = HttpRequest.get("https://www.louisvuitton.cn/zhs-cn/products/pochette-accessoires-damier-azur-005868")
+                    .timeout(1000)
+                    .cookie(cookie)
+                    .execute();
+            cookie = execute.getCookieStr();
+        } catch (
+                Exception e) {
             this.sendEmail(e);
             Console.log(ExceptionUtil.getMessage(e));
         }
-        this.sendEmail(result);
+
     }
 
+    /**
+     * @param e
+     */
     private void sendEmail(Exception e) {
         String to = "thassange@163.com";
         String subject = "lv 到货提醒";
@@ -87,6 +113,9 @@ public class LvNoticeManager {
         mailService.sendSimpleTextMail(to, subject, content);
     }
 
+    /**
+     * @param content
+     */
     private void sendEmail(String content) {
         String to = "thassange@163.com";
         String subject = "lv 到货提醒";
