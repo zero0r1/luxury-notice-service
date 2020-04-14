@@ -1,13 +1,11 @@
 package com.xth.luxury.notice.manager;
 
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.Validator;
-import cn.hutool.core.util.ReUtil;
-import cn.hutool.http.*;
-import cn.hutool.http.useragent.UserAgent;
-import cn.hutool.http.useragent.UserAgentUtil;
+import cn.hutool.http.HttpException;
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -15,11 +13,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @Component
-public class LvNotice {
+public class LvNoticeManager {
 
     @Resource
     private MailService mailService;
@@ -32,6 +28,7 @@ public class LvNotice {
 
     @Scheduled(cron = "0 0/10 * * * ?")
     public void aTask() throws InterruptedException {
+
         int noStock = 0;
         try {
             if (Validator.isEmpty(cookie) || !cookie.contains("Secure")) {
