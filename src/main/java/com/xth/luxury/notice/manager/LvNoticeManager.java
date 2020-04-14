@@ -7,6 +7,7 @@ import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -27,8 +28,8 @@ public class LvNoticeManager {
     public String cookie = "";
     private final Integer notStock = 20;
 
-    @Scheduled(cron = "0 0/10 * * * ?")
-//    @Scheduled(cron = "0/10 * * * * ?")
+    //    @Scheduled(cron = "0 0/10 * * * ?")
+    @Scheduled(cron = "0/60 * * * * ?")
     public void aTask() throws InterruptedException {
         String result = "";
 
@@ -79,7 +80,11 @@ public class LvNoticeManager {
             this.sendEmail(e);
             Console.log(ExceptionUtil.getMessage(e));
         }
-        return result;
+
+        if (StringUtils.isNotEmpty(result)) {
+            result = result.trim();
+        }
+        return JSONUtil.formatJsonStr(result);
     }
 
     /**
