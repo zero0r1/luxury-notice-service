@@ -1,5 +1,6 @@
 package com.xth.luxury.notice.manager;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.Validator;
@@ -9,6 +10,7 @@ import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.google.common.collect.Lists;
 import com.xth.luxury.notice.domain.GetStocksReqDTO;
 import com.xth.luxury.notice.domain.MimvpProxyJava;
 import org.apache.commons.lang3.StringUtils;
@@ -18,6 +20,8 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class LvNoticeManager {
@@ -33,6 +37,7 @@ public class LvNoticeManager {
     public final String homePage = "https://www.louisvuitton.cn/zhs-cn/homepage";
     public String cookie = "";
     private final Integer notStock = 20;
+    List<InetSocketAddress> socketAddressList = Lists.newArrayList();
 
     //    @Scheduled(cron = "0 0/10 * * * ?")
     @Scheduled(cron = "0/15 * * * * ?")
@@ -40,6 +45,7 @@ public class LvNoticeManager {
         String result = "";
 
         try {
+            socketAddressList = this.getInetSocketAddress();
             this.getLouisVuittonCookies(null);
             result = this.getSkuStock(result);
             this.checkedInStockSendMail(result);
@@ -49,14 +55,15 @@ public class LvNoticeManager {
         }
     }
 
-    public void aTask2(GetStocksReqDTO request) {
+    public String aTask2(GetStocksReqDTO request) {
         String result = "";
-
         try {
+            socketAddressList = this.getInetSocketAddress();
             this.getLouisVuittonCookies(request);
             result = this.getSkuStock(result);
             this.checkedInStockSendMail(result);
             this.sendEmail(result);
+            return result;
         } catch (Exception e) {
             throw e;
         }
@@ -93,13 +100,25 @@ public class LvNoticeManager {
      */
     private String getSkuStock(String result) {
         try {
-            result = HttpRequest.post(url)
-                    .cookie(cookie)
-                    //超时，毫秒
-                    .timeout(1000)
-                    .execute()
-                    .body();
-        } catch (HttpException e) {
+            for (InetSocketAddress inetSocketAddress : socketAddressList) {
+                try {
+                    Proxy proxy = new Proxy(Proxy.Type.HTTP, inetSocketAddress);
+                    result = HttpRequest.post(url)
+                            .setProxy(proxy)
+                            .cookie(cookie)
+                            //超时，毫秒
+                            .timeout(2000)
+                            .execute()
+                            .body();
+                } catch (Exception ignored) {
+                }
+
+                if (StringUtils.isNotEmpty(result) && JSONUtil.isJson(result)) {
+                    break;
+                }
+            }
+
+        } catch (Exception e) {
             cookie = null;
             this.sendEmail(e);
             Console.log(ExceptionUtil.getMessage(e));
@@ -117,17 +136,26 @@ public class LvNoticeManager {
      */
     private void getLouisVuittonCookies(GetStocksReqDTO request) {
         try {
-            SocketAddress socketAddress = this.getInetSocketAddress();
-            if (socketAddress == null) {
+            if (CollectionUtil.isEmpty(socketAddressList)) {
                 return;
             }
-            Proxy proxy = new Proxy(Proxy.Type.HTTP, socketAddress);
-            HttpResponse execute = HttpRequest.get(homePage)
-                    .header("Content-type", "application/json")
-                    .setProxy(proxy)
-                    .cookie(cookie)
-                    .execute();
-            cookie = execute.getCookieStr();
+
+            for (InetSocketAddress inetSocketAddress : socketAddressList) {
+                Proxy proxy = new Proxy(Proxy.Type.HTTP, inetSocketAddress);
+                HttpResponse execute = null;
+                try {
+                    execute = HttpRequest.get(homePage)
+                            .setProxy(proxy)
+                            .timeout(2000)
+                            .cookie(cookie)
+                            .execute();
+                } catch (Exception ignored) {
+                }
+                if (execute != null) {
+                    cookie = execute.getCookieStr();
+                    return;
+                }
+            }
         } catch (
                 Exception e) {
             this.sendEmail(e);
@@ -180,20 +208,30 @@ public class LvNoticeManager {
         }
     }
 
-    private InetSocketAddress getInetSocketAddress() {
+    private List<InetSocketAddress> getInetSocketAddress() {
         String mpUrl = "https://proxyapi.mimvp.com/api/fetchopen?orderid=868010510091252409&num=20&country_group=1&http_type=2&result_fields=1,2&result_format=json";
         String httpsIps = HttpUtil.get(mpUrl);
         Object result = "";
-        if (StringUtils.isNotEmpty(httpsIps)) {
-            if (JSONUtil.isJson(httpsIps)) {
-                JSONObject jsonObject = JSONUtil.parseObj(httpsIps);
-                Object ipPortObj = JSONUtil.parseArray(jsonObject.get("result")).get(0);
+        List<InetSocketAddress> inetSocketAddressList = Lists.newArrayList();
+        if (StringUtils.isEmpty(httpsIps)) {
+            return inetSocketAddressList;
+        }
+        if (JSONUtil.isJson(httpsIps)) {
+            JSONObject jsonObject = JSONUtil.parseObj(httpsIps);
+            if (jsonObject.get("result") == null) {
+                return inetSocketAddressList;
+            }
+            List<Object> objectArrayList = Lists.newArrayList(JSONUtil.parseArray(jsonObject.get("result")).toArray());
+            if (CollectionUtil.isEmpty(objectArrayList)) {
+                return inetSocketAddressList;
+            }
+            for (Object ipPortObj : objectArrayList) {
                 result = JSONUtil.parseObj(ipPortObj).get("ip:port");
+                if (Validator.isNotEmpty(result)) {
+                    inetSocketAddressList.add(new InetSocketAddress(result.toString().split(":")[0], Integer.parseInt(result.toString().split(":")[1])));
+                }
             }
         }
-        if (Validator.isNotEmpty(result)) {
-            return new InetSocketAddress(result.toString().split(":")[0], Integer.parseInt(result.toString().split(":")[1]));
-        }
-        return null;
+        return inetSocketAddressList;
     }
 }

@@ -19,7 +19,7 @@ public interface ILvNoticeService {
      * @param request null
      * @return true
      */
-    @ApiOperation(value = "lv到货通知", response = Boolean.class)
+    @ApiOperation(value = "lv到货通知", response = String.class)
     @RequestMapping(value = "/lv_notice", method = RequestMethod.POST)
-    Boolean doGetStockStatus(@RequestBody GetStocksReqDTO request) throws InterruptedException, UnknownHostException;
+    String doGetStockStatus(@RequestBody GetStocksReqDTO request) throws InterruptedException, UnknownHostException;
 }
