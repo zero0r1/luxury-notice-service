@@ -98,7 +98,7 @@ public class LvNoticeManager {
      */
     private void getLouisVuittonCookies() {
         try {
-            HttpResponse execute = HttpRequest.get("https://www.louisvuitton.cn/zhs-cn/products/pochette-accessoires-damier-azur-005868")
+            HttpResponse execute = HttpRequest.get("https://www.louisvuitton.cn/zhs-cn/homepage")
                     .timeout(1000)
                     .cookie(cookie)
                     .execute();
