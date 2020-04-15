@@ -99,6 +99,12 @@ public class LvNoticeManager {
     private void getLouisVuittonCookies() {
         try {
             HttpResponse execute = HttpRequest.get("https://www.louisvuitton.cn/zhs-cn/homepage")
+                    .header("User-Agent", " Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv\", \"74.0) Gecko/20100101 Firefox/74.0")
+                    .header("Accept", " text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+                    .header("Accept-Language", " en-US,en;q=0.5' --compresse")
+                    .header("DNT", " 1")
+                    .header("Connection", " keep-alive")
+                    .header("Upgrade-Insecure-Requests", " 1")
                     .timeout(1000)
                     .cookie(cookie)
                     .execute();
