@@ -121,7 +121,10 @@ public class LvNoticeManager {
         if (Validator.isNotNull(e)) {
             content = ExceptionUtil.getMessage(e);
         }
-        mailService.sendSimpleTextMail(to, subject, content);
+
+        if (StringUtils.isNotEmpty(content)) {
+            mailService.sendSimpleTextMail(to, subject, content);
+        }
     }
 
     /**
@@ -130,6 +133,8 @@ public class LvNoticeManager {
     private void sendEmail(String content) {
         String to = "thassange@163.com";
         String subject = "lv 到货提醒";
-        mailService.sendSimpleTextMail(to, subject, content);
+        if (StringUtils.isNotEmpty(content)) {
+            mailService.sendSimpleTextMail(to, subject, content);
+        }
     }
 }
