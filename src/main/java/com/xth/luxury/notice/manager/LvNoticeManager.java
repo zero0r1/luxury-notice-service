@@ -130,7 +130,7 @@ public class LvNoticeManager {
             cookie = execute.getCookieStr();
         } catch (
                 Exception e) {
-//            this.sendEmail(e);
+            this.sendEmail(e);
             Console.log(ExceptionUtil.getMessage(e));
             throw e;
         }
