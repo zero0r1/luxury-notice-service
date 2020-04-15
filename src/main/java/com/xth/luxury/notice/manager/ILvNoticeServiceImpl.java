@@ -20,8 +20,7 @@ public class ILvNoticeServiceImpl implements ILvNoticeService {
      * @return true
      */
     @Override
-    public Boolean doGetStockStatus(@RequestBody GetStocksReqDTO request) {
-        lvNoticeManager.aTask2(request);
-        return true;
+    public String doGetStockStatus(@RequestBody GetStocksReqDTO request) {
+        return lvNoticeManager.aTask2(request);
     }
 }
