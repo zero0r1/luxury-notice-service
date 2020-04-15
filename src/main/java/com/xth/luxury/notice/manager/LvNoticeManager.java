@@ -35,7 +35,7 @@ public class LvNoticeManager {
     private final Integer notStock = 20;
 
     //    @Scheduled(cron = "0 0/10 * * * ?")
-    @Scheduled(cron = "0/60 * * * * ?")
+    @Scheduled(cron = "0/15 * * * * ?")
     public void aTask() {
         String result = "";
 
