@@ -8,7 +8,6 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONUtil;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -33,10 +32,15 @@ public class LvNoticeManager {
     public void aTask() throws InterruptedException {
         String result = "";
 
-        this.getLouisVuittonCookies();
-        result = this.getSkuStock(result);
-        this.checkedInStockSendMail(result);
-        this.sendEmail(result);
+
+        try {
+            this.getLouisVuittonCookies();
+            result = this.getSkuStock(result);
+            this.checkedInStockSendMail(result);
+            this.sendEmail(result);
+        } catch (Exception e) {
+            throw e;
+        }
     }
 
     private void checkedInStockSendMail(String result) {
@@ -60,6 +64,7 @@ public class LvNoticeManager {
         } catch (Exception e) {
             this.sendEmail(e);
             Console.log(ExceptionUtil.getMessage(e));
+            throw e;
         }
     }
 
@@ -79,6 +84,7 @@ public class LvNoticeManager {
             cookie = null;
             this.sendEmail(e);
             Console.log(ExceptionUtil.getMessage(e));
+            throw e;
         }
 
         if (StringUtils.isNotEmpty(result)) {
@@ -101,8 +107,8 @@ public class LvNoticeManager {
                 Exception e) {
             this.sendEmail(e);
             Console.log(ExceptionUtil.getMessage(e));
+            throw e;
         }
-
     }
 
     /**
