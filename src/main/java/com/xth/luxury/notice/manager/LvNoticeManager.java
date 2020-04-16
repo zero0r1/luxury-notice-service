@@ -4,7 +4,7 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.Validator;
-import cn.hutool.http.HttpException;
+import cn.hutool.core.util.ReUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
@@ -14,13 +14,15 @@ import com.google.common.collect.Lists;
 import com.xth.luxury.notice.domain.GetStocksReqDTO;
 import com.xth.luxury.notice.domain.MimvpProxyJava;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
-import java.net.*;
-import java.util.ArrayList;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.UnknownHostException;
 import java.util.List;
 
 @Component
@@ -45,7 +47,7 @@ public class LvNoticeManager {
         String result = "";
 
         try {
-            socketAddressList = this.getInetSocketAddress();
+            socketAddressList = this.getInetSocketAddressByXiCi();
             this.getLouisVuittonCookies(null);
             result = this.getSkuStock(result);
             this.checkedInStockSendMail(result);
@@ -58,7 +60,7 @@ public class LvNoticeManager {
     public String aTask2(GetStocksReqDTO request) {
         String result = "";
         try {
-            socketAddressList = this.getInetSocketAddress();
+            socketAddressList = this.getInetSocketAddressByXiCi();
             this.getLouisVuittonCookies(request);
             result = this.getSkuStock(result);
             this.checkedInStockSendMail(result);
@@ -233,5 +235,34 @@ public class LvNoticeManager {
             }
         }
         return inetSocketAddressList;
+    }
+
+    /**
+     * 西刺代理
+     *
+     * @return ip 地址
+     */
+    public List<InetSocketAddress> getInetSocketAddressByXiCi() {
+        String xiCiUrl = "https://www.xicidaili.com/wn/";
+        String httpsIps = HttpUtil.get(xiCiUrl);
+
+        List<InetSocketAddress> result = Lists.newArrayList();
+        //使用正则获取所有标题
+        List<String> ips = ReUtil.findAll("((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})(\\.((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})){3}", httpsIps, 0);
+        List<String> ports = ReUtil.findAll("<td>(\\d+)</td>", httpsIps, 1);
+
+        int index = 0;
+        String port = "";
+        for (String ip : ips) {
+            port = ports.get(index);
+            int portInt = NumberUtils.isDigits(port) ? Integer.parseInt(port) : 0;
+
+            if (portInt > 0) {
+                result.add(new InetSocketAddress(ip, portInt));
+            }
+
+            index++;
+        }
+        return result;
     }
 }
