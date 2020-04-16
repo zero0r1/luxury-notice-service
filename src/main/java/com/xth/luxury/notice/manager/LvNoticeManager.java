@@ -38,7 +38,8 @@ public class LvNoticeManager {
     public final String url = "https://secure.louisvuitton.cn/ajaxsecure/getStockLevel.jsp?storeLang=zhs-cn&pageType=storelocator_section&skuIdList=" + sku + "&null&_=1586758087289";
     public final String homePage = "https://www.louisvuitton.cn/zhs-cn/homepage";
     public String cookie = "";
-    private final Integer notStock = 20;
+    private final Integer notStockLimit = 20;
+    private int noStock = 0;
     List<InetSocketAddress> socketAddressList = Lists.newArrayList();
 
     //    @Scheduled(cron = "0 0/10 * * * ?")
@@ -51,7 +52,7 @@ public class LvNoticeManager {
             this.getLouisVuittonCookies(null);
             result = this.getSkuStock(result);
             this.checkedInStockSendMail(result);
-            this.sendEmail(result);
+//            this.sendEmail(result);
         } catch (Exception e) {
             throw e;
         }
@@ -64,7 +65,7 @@ public class LvNoticeManager {
             this.getLouisVuittonCookies(request);
             result = this.getSkuStock(result);
             this.checkedInStockSendMail(result);
-            this.sendEmail(result);
+//            this.sendEmail(result);
             return result;
         } catch (Exception e) {
             throw e;
@@ -73,7 +74,7 @@ public class LvNoticeManager {
 
     private void checkedInStockSendMail(String result) {
         Object inStockObj = null;
-        int noStock = 0;
+
         try {
             if (JSONUtil.isJson(result)) {
                 Object skuObj = JSONUtil.parseObj(result).get(sku);
@@ -83,7 +84,7 @@ public class LvNoticeManager {
                 this.sendEmail("有货啦~~");
                 noStock = 0;
             } else {
-                if (noStock == this.notStock) {
+                if (noStock == this.notStockLimit) {
                     this.sendEmail(result);
                     noStock = 0;
                 }
