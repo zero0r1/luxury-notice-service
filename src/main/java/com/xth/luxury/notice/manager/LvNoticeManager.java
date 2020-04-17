@@ -12,7 +12,6 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.google.common.collect.Lists;
 import com.xth.luxury.notice.domain.GetStocksReqDTO;
-import com.xth.luxury.notice.domain.MimvpProxyJava;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -22,7 +21,6 @@ import org.springframework.web.client.RestTemplate;
 import javax.annotation.Resource;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.net.UnknownHostException;
 import java.util.List;
 
 @Component
@@ -167,22 +165,6 @@ public class LvNoticeManager {
         }
     }
 
-    /**
-     * @param request
-     */
-    private void getLouisVuittonCookies2(GetStocksReqDTO request) throws UnknownHostException {
-        try {
-
-            // proxy protocol 只支持 http、socks5
-            String data = MimvpProxyJava.proxy_protocol("http", MimvpProxyJava.proxyMap.get("http"), homePage);        // http
-            System.out.println("http : " + MimvpProxyJava.proxyMap.get("http") + " --> " + data.length());
-        } catch (
-                Exception e) {
-//            this.sendEmail(e);
-            Console.log(ExceptionUtil.getMessage(e));
-            throw e;
-        }
-    }
 
     /**
      * @param e
