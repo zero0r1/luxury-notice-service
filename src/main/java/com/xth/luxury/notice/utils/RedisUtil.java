@@ -6,7 +6,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -130,5 +129,9 @@ public class RedisUtil {
             e.printStackTrace();
             return false;
         }
+    }
+
+    public Long getIncrement(String key, Object value, long time) {
+        return redisTemplate.opsForValue().increment(key);
     }
 }
