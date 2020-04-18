@@ -12,13 +12,16 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.google.common.collect.Lists;
 import com.xth.luxury.notice.domain.GetStocksReqDTO;
+import com.xth.luxury.notice.redis.InetSocketAddressRedis;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
+import javax.validation.GroupSequence;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.List;
@@ -39,6 +42,8 @@ public class LvNoticeManager {
     private final Integer notStockLimit = 20;
     private int noStock = 0;
     List<InetSocketAddress> socketAddressList = Lists.newArrayList();
+    @Resource
+    private com.xth.luxury.notice.redis.InetSocketAddressRedis inetSocketAddressRedis;
 
     //    @Scheduled(cron = "0 0/10 * * * ?")
     @Scheduled(cron = "0/15 * * * * ?")
@@ -46,7 +51,7 @@ public class LvNoticeManager {
         String result = "";
 
         try {
-            socketAddressList = this.getInetSocketAddressByXiCi();
+//            socketAddressList = this.getInetSocketAddressByXiCi();
             this.getLouisVuittonCookies(null);
             result = this.getSkuStock(result);
             this.checkedInStockSendMail(result);
@@ -59,7 +64,7 @@ public class LvNoticeManager {
     public String aTask2(GetStocksReqDTO request) {
         String result = "";
         try {
-            socketAddressList = this.getInetSocketAddressByXiCi();
+//            socketAddressList = this.getInetSocketAddressByXiCi();
             this.getLouisVuittonCookies(request);
             result = this.getSkuStock(result);
             this.checkedInStockSendMail(result);
@@ -193,33 +198,6 @@ public class LvNoticeManager {
         }
     }
 
-    private List<InetSocketAddress> getInetSocketAddress() {
-        String mpUrl = "https://proxyapi.mimvp.com/api/fetchopen?orderid=868010510091252409&num=20&country_group=1&http_type=2&result_fields=1,2&result_format=json";
-        String httpsIps = HttpUtil.get(mpUrl);
-        Object result = "";
-        List<InetSocketAddress> inetSocketAddressList = Lists.newArrayList();
-        if (StringUtils.isEmpty(httpsIps)) {
-            return inetSocketAddressList;
-        }
-        if (JSONUtil.isJson(httpsIps)) {
-            JSONObject jsonObject = JSONUtil.parseObj(httpsIps);
-            if (jsonObject.get("result") == null) {
-                return inetSocketAddressList;
-            }
-            List<Object> objectArrayList = Lists.newArrayList(JSONUtil.parseArray(jsonObject.get("result")).toArray());
-            if (CollectionUtil.isEmpty(objectArrayList)) {
-                return inetSocketAddressList;
-            }
-            for (Object ipPortObj : objectArrayList) {
-                result = JSONUtil.parseObj(ipPortObj).get("ip:port");
-                if (Validator.isNotEmpty(result)) {
-                    inetSocketAddressList.add(new InetSocketAddress(result.toString().split(":")[0], Integer.parseInt(result.toString().split(":")[1])));
-                }
-            }
-        }
-        return inetSocketAddressList;
-    }
-
     /**
      * 西刺代理
      *
@@ -236,16 +214,20 @@ public class LvNoticeManager {
 
         int index = 0;
         String port = "";
+        InetSocketAddress inetSocketAddress;
         for (String ip : ips) {
             port = ports.get(index);
             int portInt = NumberUtils.isDigits(port) ? Integer.parseInt(port) : 0;
 
             if (portInt > 0) {
-                result.add(new InetSocketAddress(ip, portInt));
+                long redisAtomicLong = inetSocketAddressRedis.getRedisAtomicLong(InetSocketAddressRedis.ipCountString);
+                inetSocketAddress = new InetSocketAddress(ip, portInt);
+                result.add(inetSocketAddress);
+                inetSocketAddressRedis.setValueForever(ip + "-" + redisAtomicLong, inetSocketAddress);
             }
-
             index++;
         }
+
         return result;
     }
 }
