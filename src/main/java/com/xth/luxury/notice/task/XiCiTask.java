@@ -4,11 +4,9 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpUtil;
-import com.google.common.collect.Lists;
 import com.xth.luxury.notice.redis.InetSocketAddressRedis;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -18,9 +16,9 @@ import java.net.Proxy;
 import java.util.List;
 
 @Component
-public class XiLaIpTask {
+public class XiCiTask {
     @Resource
-    private com.xth.luxury.notice.redis.InetSocketAddressRedis inetSocketAddressRedis;
+    private InetSocketAddressRedis inetSocketAddressRedis;
     private Integer ipPageNum = 0;
     private int timeOut = 6000;
 

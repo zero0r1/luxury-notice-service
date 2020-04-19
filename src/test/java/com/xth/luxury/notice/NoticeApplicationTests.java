@@ -24,8 +24,7 @@ class NoticeApplicationTests {
 
     @Test
     void contextLoads() {
-        List<InetSocketAddress> inetSocketAddressByXiCi = lvNoticeManager.getInetSocketAddressByXiCi();
-        int a = 1;
+
     }
 
 
