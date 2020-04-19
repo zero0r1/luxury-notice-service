@@ -278,8 +278,14 @@ public class LvNoticeManager {
         return result;
     }
 
+    /**
+     * 89免费代理
+     *
+     * @return
+     */
     public List<InetSocketAddress> getInetSocketAddressBy89() {
         String httpsIps = "";
+        //http://www.89ip.cn/
         String url = "http://www.89ip.cn/tqdl.html?num=600&address=&kill_address=&port=&kill_port=&isp=";
 
         InetSocketAddress socketAddressItem = this.getInetSocketAddress();
@@ -330,8 +336,14 @@ public class LvNoticeManager {
     }
 
 
+    /**
+     * 西拉免费代理
+     *
+     * @return
+     */
     public List<InetSocketAddress> getInetSocketAddressByXila() {
         String httpsIps = "";
+        //http://www.xiladaili.com/interface/
         String url = "http://www.xiladaili.com/api/?uuid=b398cacf74744c479cd84b004c7e7dd8&num=500&place=%E4%B8%AD%E5%9B%BD&protocol=2&sortby=0&repeat=1&format=3&position=1";
 
         InetSocketAddress socketAddressItem = this.getInetSocketAddress();
