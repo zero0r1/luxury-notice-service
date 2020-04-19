@@ -9,8 +9,9 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 public class InetSocketAddressRedis extends AbstractRedis<InetSocketAddress> {
-    public static String ipCountString = "ip_count";
+    public static String ip = "ip";
+
     InetSocketAddressRedis() {
-        super("ip:");
+        super(ip);
     }
 }

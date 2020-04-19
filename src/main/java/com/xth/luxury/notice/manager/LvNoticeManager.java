@@ -5,6 +5,7 @@ import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.Validator;
 import cn.hutool.core.util.ReUtil;
+import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
@@ -41,9 +42,10 @@ public class LvNoticeManager {
     public String cookie = "";
     private final Integer notStockLimit = 20;
     private int noStock = 0;
-    List<InetSocketAddress> socketAddressList = Lists.newArrayList();
     @Resource
     private com.xth.luxury.notice.redis.InetSocketAddressRedis inetSocketAddressRedis;
+    private Integer ipPageNum = 0;
+    private int timeOut = 6000;
 
     //    @Scheduled(cron = "0 0/10 * * * ?")
     @Scheduled(cron = "0/15 * * * * ?")
@@ -59,6 +61,21 @@ public class LvNoticeManager {
         } catch (Exception e) {
             throw e;
         }
+    }
+
+    //    @Scheduled(cron = "0/3 * * * * ?")
+    public void getIpTask() {
+        getInetSocketAddressByXiCi();
+    }
+
+    @Scheduled(cron = "0/3 * * * * ?")
+    public void getIpTask89() {
+        getInetSocketAddressBy89();
+    }
+
+    @Scheduled(cron = "0/3 * * * * ?")
+    public void getIpTaskXila() {
+        getInetSocketAddressByXila();
     }
 
     public String aTask2(GetStocksReqDTO request) {
@@ -106,14 +123,19 @@ public class LvNoticeManager {
      */
     private String getSkuStock(String result) {
         try {
-            for (InetSocketAddress inetSocketAddress : socketAddressList) {
+
+            while (true) {
                 try {
-                    Proxy proxy = new Proxy(Proxy.Type.HTTP, inetSocketAddress);
+                    InetSocketAddress socketAddressItem = this.getInetSocketAddress();
+                    if (socketAddressItem == null) {
+                        return "";
+                    }
+                    Proxy proxy = new Proxy(Proxy.Type.HTTP, socketAddressItem);
                     result = HttpRequest.post(url)
                             .setProxy(proxy)
                             .cookie(cookie)
                             //超时，毫秒
-                            .timeout(2000)
+                            .timeout(timeOut)
                             .execute()
                             .body();
                 } catch (Exception ignored) {
@@ -123,7 +145,6 @@ public class LvNoticeManager {
                     break;
                 }
             }
-
         } catch (Exception e) {
             cookie = null;
             this.sendEmail(e);
@@ -142,20 +163,22 @@ public class LvNoticeManager {
      */
     private void getLouisVuittonCookies(GetStocksReqDTO request) {
         try {
-            if (CollectionUtil.isEmpty(socketAddressList)) {
-                return;
-            }
 
-            for (InetSocketAddress inetSocketAddress : socketAddressList) {
-                Proxy proxy = new Proxy(Proxy.Type.HTTP, inetSocketAddress);
+            while (true) {
+                InetSocketAddress socketAddressItem = this.getInetSocketAddress();
+                if (socketAddressItem == null) {
+                    return;
+                }
+                Proxy proxy = new Proxy(Proxy.Type.HTTP, socketAddressItem);
                 HttpResponse execute = null;
                 try {
                     execute = HttpRequest.get(homePage)
                             .setProxy(proxy)
-                            .timeout(2000)
+                            .timeout(timeOut)
                             .cookie(cookie)
                             .execute();
                 } catch (Exception ignored) {
+                    inetSocketAddressRedis.sRemove(InetSocketAddressRedis.ip, socketAddressItem);
                 }
                 if (execute != null) {
                     cookie = execute.getCookieStr();
@@ -204,8 +227,32 @@ public class LvNoticeManager {
      * @return ip 地址
      */
     public List<InetSocketAddress> getInetSocketAddressByXiCi() {
+        String httpsIps = "";
         String xiCiUrl = "https://www.xicidaili.com/wn/";
-        String httpsIps = HttpUtil.get(xiCiUrl);
+
+        InetSocketAddress socketAddressItem = this.getInetSocketAddress();
+        if (socketAddressItem == null) {
+            httpsIps = HttpUtil.get(xiCiUrl);
+        } else {
+            String pageNum = !this.ipPageNum.equals(0) ? this.ipPageNum.toString() : "";
+            Proxy proxy = new Proxy(Proxy.Type.HTTP, socketAddressItem);
+
+            do {
+                try {
+                    socketAddressItem = this.getInetSocketAddress();
+                    if (socketAddressItem == null) {
+                        return Lists.newArrayList();
+                    }
+                    httpsIps = HttpRequest.get(xiCiUrl + pageNum)
+                            .setProxy(proxy)
+                            .timeout(timeOut)
+                            .execute()
+                            .body();
+                } catch (Exception e) {
+                    inetSocketAddressRedis.sRemove(InetSocketAddressRedis.ip, socketAddressItem);
+                }
+            } while (StringUtils.isEmpty(httpsIps));
+        }
 
         List<InetSocketAddress> result = Lists.newArrayList();
         //使用正则获取所有标题
@@ -220,14 +267,122 @@ public class LvNoticeManager {
             int portInt = NumberUtils.isDigits(port) ? Integer.parseInt(port) : 0;
 
             if (portInt > 0) {
-                long redisAtomicLong = inetSocketAddressRedis.getRedisAtomicLong(InetSocketAddressRedis.ipCountString);
                 inetSocketAddress = new InetSocketAddress(ip, portInt);
                 result.add(inetSocketAddress);
-                inetSocketAddressRedis.setValueForever(ip + "-" + redisAtomicLong, inetSocketAddress);
+                inetSocketAddressRedis.sAdd(InetSocketAddressRedis.ip, inetSocketAddress);
             }
             index++;
         }
 
+        this.ipPageNum++;
         return result;
+    }
+
+    public List<InetSocketAddress> getInetSocketAddressBy89() {
+        String httpsIps = "";
+        String url = "http://www.89ip.cn/tqdl.html?num=600&address=&kill_address=&port=&kill_port=&isp=";
+
+        InetSocketAddress socketAddressItem = this.getInetSocketAddress();
+        if (socketAddressItem == null) {
+            httpsIps = HttpUtil.get(url);
+        } else {
+            String pageNum = !this.ipPageNum.equals(0) ? this.ipPageNum.toString() : "";
+            Proxy proxy = new Proxy(Proxy.Type.HTTP, socketAddressItem);
+
+            do {
+                try {
+                    socketAddressItem = this.getInetSocketAddress();
+                    if (socketAddressItem == null) {
+                        return Lists.newArrayList();
+                    }
+                    httpsIps = HttpRequest.get(url + pageNum)
+                            .setProxy(proxy)
+                            .timeout(timeOut)
+                            .execute()
+                            .body();
+                } catch (Exception e) {
+                    inetSocketAddressRedis.sRemove(InetSocketAddressRedis.ip, socketAddressItem);
+                }
+            } while (StringUtils.isEmpty(httpsIps));
+        }
+
+        List<InetSocketAddress> result = Lists.newArrayList();
+        //使用正则获取所有标题
+        List<String> ips = ReUtil.findAll("((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})(\\.((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})){3}:(\\d+)", httpsIps, 0);
+
+        int index = 0;
+        String port = "";
+        String currentIp = "";
+        InetSocketAddress inetSocketAddress;
+        for (String ip : ips) {
+            currentIp = ip.split(":")[0];
+            port = ip.split(":")[1];
+            int portInt = NumberUtils.isDigits(port) ? Integer.parseInt(port) : 0;
+
+            inetSocketAddress = new InetSocketAddress(currentIp, portInt);
+            result.add(inetSocketAddress);
+            inetSocketAddressRedis.sAdd(InetSocketAddressRedis.ip, inetSocketAddress);
+            index++;
+        }
+
+        this.ipPageNum++;
+        return result;
+    }
+
+
+    public List<InetSocketAddress> getInetSocketAddressByXila() {
+        String httpsIps = "";
+        String url = "http://www.xiladaili.com/api/?uuid=b398cacf74744c479cd84b004c7e7dd8&num=500&place=%E4%B8%AD%E5%9B%BD&protocol=2&sortby=0&repeat=1&format=3&position=1";
+
+        InetSocketAddress socketAddressItem = this.getInetSocketAddress();
+        if (socketAddressItem == null) {
+            httpsIps = HttpUtil.get(url);
+        } else {
+            String pageNum = !this.ipPageNum.equals(0) ? this.ipPageNum.toString() : "";
+            Proxy proxy = new Proxy(Proxy.Type.HTTP, socketAddressItem);
+
+            do {
+                try {
+                    socketAddressItem = this.getInetSocketAddress();
+                    if (socketAddressItem == null) {
+                        return Lists.newArrayList();
+                    }
+                    httpsIps = HttpRequest.get(url + pageNum)
+                            .setProxy(proxy)
+                            .timeout(timeOut)
+                            .execute()
+                            .body();
+                } catch (Exception e) {
+                    inetSocketAddressRedis.sRemove(InetSocketAddressRedis.ip, socketAddressItem);
+                }
+            } while (StringUtils.isEmpty(httpsIps));
+        }
+
+        List<InetSocketAddress> result = Lists.newArrayList();
+        //使用正则获取所有标题
+        List<String> ips = ReUtil.findAll("((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})(\\.((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})){3}:(\\d+)", httpsIps, 0);
+
+        int index = 0;
+        String port = "";
+        String currentIp = "";
+        InetSocketAddress inetSocketAddress;
+        for (String ip : ips) {
+            currentIp = ip.split(":")[0];
+            port = ip.split(":")[1];
+            int portInt = NumberUtils.isDigits(port) ? Integer.parseInt(port) : 0;
+
+            inetSocketAddress = new InetSocketAddress(currentIp, portInt);
+            result.add(inetSocketAddress);
+            inetSocketAddressRedis.sAdd(InetSocketAddressRedis.ip, inetSocketAddress);
+            index++;
+        }
+
+        this.ipPageNum++;
+        return result;
+    }
+
+    private InetSocketAddress getInetSocketAddress() {
+        List<InetSocketAddress> socketAddressList = inetSocketAddressRedis.sPop(InetSocketAddressRedis.ip, 1);
+        return !CollectionUtil.isEmpty(socketAddressList) ? socketAddressList.get(0) : null;
     }
 }

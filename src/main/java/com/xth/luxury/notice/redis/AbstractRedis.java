@@ -20,6 +20,7 @@ public abstract class AbstractRedis<V> {
 
     AbstractRedis(String prefix) {
         this.prefix = prefix;
+        this.prefix += ":";
     }
 
     /**
@@ -73,5 +74,21 @@ public abstract class AbstractRedis<V> {
         }
         RedisAtomicLong redisAtomicLong = new RedisAtomicLong(key, redisTemplate.getConnectionFactory());
         return redisAtomicLong.decrementAndGet();
+    }
+
+    @SafeVarargs
+    public final Long sAdd(String key, V... val) {
+        if (redisTemplate == null) {
+            return 0L;
+        }
+        return redisTemplate.opsForSet().add(this.prefix.concat(key), val);
+    }
+
+    public List<V> sPop(String key, int count) {
+        return redisTemplate.opsForSet().pop(this.prefix.concat(key), count);
+    }
+
+    public Long sRemove(String key, V val) {
+        return redisTemplate.opsForSet().remove(this.prefix.concat(key), val);
     }
 }
