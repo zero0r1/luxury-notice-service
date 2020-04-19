@@ -9,6 +9,7 @@ import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
+import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.google.common.collect.Lists;
@@ -45,7 +46,7 @@ public class LvNoticeManager {
     @Resource
     private com.xth.luxury.notice.redis.InetSocketAddressRedis inetSocketAddressRedis;
     private Integer ipPageNum = 0;
-    private int timeOut = 6000;
+    private int timeOut = 2000;
 
     //    @Scheduled(cron = "0 0/10 * * * ?")
     @Scheduled(cron = "0/15 * * * * ?")
@@ -62,17 +63,6 @@ public class LvNoticeManager {
             throw e;
         }
     }
-
-    //    @Scheduled(cron = "0/3 * * * * ?")
-    public void getIpTask() {
-        getInetSocketAddressByXiCi();
-    }
-
-    //    @Scheduled(cron = "0/3 * * * * ?")
-    public void getIpTask89() {
-        getInetSocketAddressBy89();
-    }
-
 
     public String aTask2(GetStocksReqDTO request) {
         String result = "";
@@ -97,11 +87,11 @@ public class LvNoticeManager {
                 inStockObj = JSONUtil.parseObj(skuObj).get(this.inStock);
             }
             if (Validator.equal(inStockObj, true)) {
-                this.sendEmail("有货啦~~");
+                this.sendEmail("有货啦~~", "lv 到货啦!");
                 noStock = 0;
             } else {
                 if (noStock == this.notStockLimit) {
-                    this.sendEmail(result);
+                    this.sendEmail(result, "lv 定时提醒.");
                     noStock = 0;
                 }
                 noStock++;
@@ -195,7 +185,7 @@ public class LvNoticeManager {
      */
     private void sendEmail(Exception e) {
         String to = "thassange@163.com";
-        String subject = "lv 到货提醒";
+        String subject = "lv 错误提示";
         String content = "";
         if (Validator.isNotNull(e)) {
             content = ExceptionUtil.getMessage(e);
@@ -209,126 +199,31 @@ public class LvNoticeManager {
     /**
      * @param content
      */
-    private void sendEmail(String content) {
+    private void sendEmail(String content, String title) {
         String to = "thassange@163.com";
-        String subject = "lv 到货提醒";
         if (StringUtils.isNotEmpty(content)) {
-            mailService.sendSimpleTextMail(to, subject, content);
+            mailService.sendSimpleTextMail(to, title, content);
         }
     }
 
-    /**
-     * 西刺代理
-     *
-     * @return ip 地址
-     */
-    public List<InetSocketAddress> getInetSocketAddressByXiCi() {
-        String httpsIps = "";
-        String xiCiUrl = "https://www.xicidaili.com/wn/";
-
-        InetSocketAddress socketAddressItem = this.getInetSocketAddress();
-        if (socketAddressItem == null) {
-            httpsIps = HttpUtil.get(xiCiUrl);
-        } else {
-            String pageNum = !this.ipPageNum.equals(0) ? this.ipPageNum.toString() : "";
-            Proxy proxy = new Proxy(Proxy.Type.HTTP, socketAddressItem);
-
-            do {
-                try {
-                    socketAddressItem = this.getInetSocketAddress();
-                    if (socketAddressItem == null) {
-                        return Lists.newArrayList();
+    @Scheduled(cron = "0/30 * * * * ?")
+    private void getInetSocketAddressByApi() {
+        String mpUrl = "https://proxyapi.mimvp.com/api/fetchopen?orderid=861176314039185103&country_group=1&http_type=2&result_fields=1,2&result_format=json";
+        String httpsIps = HttpUtil.get(mpUrl);
+        Object result = "";
+        if (StringUtils.isNotEmpty(httpsIps)) {
+            if (JSONUtil.isJson(httpsIps)) {
+                JSONObject jsonObject = JSONUtil.parseObj(httpsIps);
+                JSONArray objects = JSONUtil.parseArray(jsonObject.get("result"));
+                for (Object ipPortObj : objects.toArray()) {
+                    result = JSONUtil.parseObj(ipPortObj).get("ip:port");
+                    if (Validator.isNotEmpty(result)) {
+                        InetSocketAddress inetSocketAddress = new InetSocketAddress(result.toString().split(":")[0], Integer.parseInt(result.toString().split(":")[1]));
+                        inetSocketAddressRedis.sAdd(InetSocketAddressRedis.ip, inetSocketAddress);
                     }
-                    httpsIps = HttpRequest.get(xiCiUrl + pageNum)
-                            .setProxy(proxy)
-                            .timeout(timeOut)
-                            .execute()
-                            .body();
-                } catch (Exception e) {
-                    inetSocketAddressRedis.sRemove(InetSocketAddressRedis.ip, socketAddressItem);
                 }
-            } while (StringUtils.isEmpty(httpsIps));
-        }
-
-        List<InetSocketAddress> result = Lists.newArrayList();
-        //使用正则获取所有标题
-        List<String> ips = ReUtil.findAll("((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})(\\.((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})){3}", httpsIps, 0);
-        List<String> ports = ReUtil.findAll("<td>(\\d+)</td>", httpsIps, 1);
-
-        int index = 0;
-        String port = "";
-        InetSocketAddress inetSocketAddress;
-        for (String ip : ips) {
-            port = ports.get(index);
-            int portInt = NumberUtils.isDigits(port) ? Integer.parseInt(port) : 0;
-
-            if (portInt > 0) {
-                inetSocketAddress = new InetSocketAddress(ip, portInt);
-                result.add(inetSocketAddress);
-                inetSocketAddressRedis.sAdd(InetSocketAddressRedis.ip, inetSocketAddress);
             }
-            index++;
         }
-
-        this.ipPageNum++;
-        return result;
-    }
-
-    /**
-     * 89免费代理
-     *
-     * @return
-     */
-    public List<InetSocketAddress> getInetSocketAddressBy89() {
-        String httpsIps = "";
-        //http://www.89ip.cn/
-        String url = "http://www.89ip.cn/tqdl.html?num=600&address=&kill_address=&port=&kill_port=&isp=";
-
-        InetSocketAddress socketAddressItem = this.getInetSocketAddress();
-        if (socketAddressItem == null) {
-            httpsIps = HttpUtil.get(url);
-        } else {
-            String pageNum = !this.ipPageNum.equals(0) ? this.ipPageNum.toString() : "";
-            Proxy proxy = new Proxy(Proxy.Type.HTTP, socketAddressItem);
-
-            do {
-                try {
-                    socketAddressItem = this.getInetSocketAddress();
-                    if (socketAddressItem == null) {
-                        return Lists.newArrayList();
-                    }
-                    httpsIps = HttpRequest.get(url + pageNum)
-                            .setProxy(proxy)
-                            .timeout(timeOut)
-                            .execute()
-                            .body();
-                } catch (Exception e) {
-                    inetSocketAddressRedis.sRemove(InetSocketAddressRedis.ip, socketAddressItem);
-                }
-            } while (StringUtils.isEmpty(httpsIps));
-        }
-
-        List<InetSocketAddress> result = Lists.newArrayList();
-        //使用正则获取所有标题
-        List<String> ips = ReUtil.findAll("((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})(\\.((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})){3}:(\\d+)", httpsIps, 0);
-
-        int index = 0;
-        String port = "";
-        String currentIp = "";
-        InetSocketAddress inetSocketAddress;
-        for (String ip : ips) {
-            currentIp = ip.split(":")[0];
-            port = ip.split(":")[1];
-            int portInt = NumberUtils.isDigits(port) ? Integer.parseInt(port) : 0;
-
-            inetSocketAddress = new InetSocketAddress(currentIp, portInt);
-            result.add(inetSocketAddress);
-            inetSocketAddressRedis.sAdd(InetSocketAddressRedis.ip, inetSocketAddress);
-            index++;
-        }
-
-        this.ipPageNum++;
-        return result;
     }
 
     private InetSocketAddress getInetSocketAddress() {
