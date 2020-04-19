@@ -68,15 +68,11 @@ public class LvNoticeManager {
         getInetSocketAddressByXiCi();
     }
 
-    @Scheduled(cron = "0/3 * * * * ?")
+    //    @Scheduled(cron = "0/3 * * * * ?")
     public void getIpTask89() {
         getInetSocketAddressBy89();
     }
 
-    @Scheduled(cron = "0/3 * * * * ?")
-    public void getIpTaskXila() {
-        getInetSocketAddressByXila();
-    }
 
     public String aTask2(GetStocksReqDTO request) {
         String result = "";
@@ -287,64 +283,6 @@ public class LvNoticeManager {
         String httpsIps = "";
         //http://www.89ip.cn/
         String url = "http://www.89ip.cn/tqdl.html?num=600&address=&kill_address=&port=&kill_port=&isp=";
-
-        InetSocketAddress socketAddressItem = this.getInetSocketAddress();
-        if (socketAddressItem == null) {
-            httpsIps = HttpUtil.get(url);
-        } else {
-            String pageNum = !this.ipPageNum.equals(0) ? this.ipPageNum.toString() : "";
-            Proxy proxy = new Proxy(Proxy.Type.HTTP, socketAddressItem);
-
-            do {
-                try {
-                    socketAddressItem = this.getInetSocketAddress();
-                    if (socketAddressItem == null) {
-                        return Lists.newArrayList();
-                    }
-                    httpsIps = HttpRequest.get(url + pageNum)
-                            .setProxy(proxy)
-                            .timeout(timeOut)
-                            .execute()
-                            .body();
-                } catch (Exception e) {
-                    inetSocketAddressRedis.sRemove(InetSocketAddressRedis.ip, socketAddressItem);
-                }
-            } while (StringUtils.isEmpty(httpsIps));
-        }
-
-        List<InetSocketAddress> result = Lists.newArrayList();
-        //使用正则获取所有标题
-        List<String> ips = ReUtil.findAll("((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})(\\.((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})){3}:(\\d+)", httpsIps, 0);
-
-        int index = 0;
-        String port = "";
-        String currentIp = "";
-        InetSocketAddress inetSocketAddress;
-        for (String ip : ips) {
-            currentIp = ip.split(":")[0];
-            port = ip.split(":")[1];
-            int portInt = NumberUtils.isDigits(port) ? Integer.parseInt(port) : 0;
-
-            inetSocketAddress = new InetSocketAddress(currentIp, portInt);
-            result.add(inetSocketAddress);
-            inetSocketAddressRedis.sAdd(InetSocketAddressRedis.ip, inetSocketAddress);
-            index++;
-        }
-
-        this.ipPageNum++;
-        return result;
-    }
-
-
-    /**
-     * 西拉免费代理
-     *
-     * @return
-     */
-    public List<InetSocketAddress> getInetSocketAddressByXila() {
-        String httpsIps = "";
-        //http://www.xiladaili.com/interface/
-        String url = "http://www.xiladaili.com/api/?uuid=b398cacf74744c479cd84b004c7e7dd8&num=500&place=%E4%B8%AD%E5%9B%BD&protocol=2&sortby=0&repeat=1&format=3&position=1";
 
         InetSocketAddress socketAddressItem = this.getInetSocketAddress();
         if (socketAddressItem == null) {
