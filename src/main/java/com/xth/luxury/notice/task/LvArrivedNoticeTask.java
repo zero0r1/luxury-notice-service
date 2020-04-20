@@ -1,16 +1,13 @@
-package com.xth.luxury.notice.manager;
+package com.xth.luxury.notice.task;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.lang.Validator;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
-import cn.hutool.http.HttpUtil;
-import cn.hutool.json.JSONArray;
-import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.StaticLog;
-import com.xth.luxury.notice.domain.GetStocksReqDTO;
+import com.xth.luxury.notice.manager.MailService;
 import com.xth.luxury.notice.redis.InetSocketAddressRedis;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -22,10 +19,9 @@ import java.net.Proxy;
 import java.util.List;
 
 @Component
-public class LvNoticeManager {
+public class LvArrivedNoticeTask {
     @Resource
     private MailService mailService;
-
     private final String sku = "N41207";
     public final String url = "https://secure.louisvuitton.cn/ajaxsecure/getStockLevel.jsp?storeLang=zhs-cn&pageType=storelocator_section&skuIdList=" + sku + "&null&_=1586758087289";
     public final String homePage = "https://www.louisvuitton.cn/zhs-cn/homepage";
@@ -36,46 +32,16 @@ public class LvNoticeManager {
     private int timeOut = 2000;
     String to = "thassange@163.com";
 
-    public String runLvNoticeByManual() {
+    @Scheduled(cron = "0/15 * * * * ?")
+    public void runLvNotice() {
         String result = "";
         try {
-            this.getLouisVuittonCookies(null);
+            StaticLog.info("{}{}", "任务开始", "15s 一次");
+            this.getLouisVuittonCookies();
             result = this.getSkuStock(result);
             this.checkedInStockSendMail(result);
-            return result;
         } catch (Exception e) {
-            StaticLog.error("aTask" + ExceptionUtil.getMessage(e));
-        }
-        return result;
-    }
-
-    private void checkedInStockSendMail(String result) {
-        Object inStockObj = null;
-        try {
-            if (JSONUtil.isJson(result)) {
-                Object skuObj = JSONUtil.parseObj(result).get(sku);
-                String inStock = "inStock";
-                inStockObj = JSONUtil.parseObj(skuObj).get(inStock);
-            }
-            if (Validator.equal(inStockObj, true)) {
-                noStock = 0;
-                StaticLog.info("{}", "lv 到货啦!");
-                StaticLog.info("{}", "lv 到货啦!");
-                StaticLog.info("{}", "lv 到货啦!");
-                this.sendEmail("有货啦~~", "lv 到货啦!");
-            } else {
-                Integer notStockLimit = 20;
-                if (noStock == notStockLimit) {
-                    noStock = 0;
-                    this.sendEmail(result, "lv 定时提醒.");
-                }
-                noStock++;
-                StaticLog.info("{}{}", "lv 定时提醒.\\r\\n", result);
-                StaticLog.info("{}{}次", "当前已经执行到", noStock);
-            }
-        } catch (Exception e) {
-            StaticLog.error("checkedInStockSendMail" + ExceptionUtil.getMessage(e));
-            throw e;
+            StaticLog.error("aTask Scheduled" + ExceptionUtil.getMessage(e));
         }
     }
 
@@ -119,10 +85,37 @@ public class LvNoticeManager {
         return JSONUtil.formatJsonStr(result);
     }
 
-    /**
-     * @param request
-     */
-    private void getLouisVuittonCookies(GetStocksReqDTO request) {
+    private void checkedInStockSendMail(String result) {
+        Object inStockObj = null;
+        try {
+            if (JSONUtil.isJson(result)) {
+                Object skuObj = JSONUtil.parseObj(result).get(sku);
+                String inStock = "inStock";
+                inStockObj = JSONUtil.parseObj(skuObj).get(inStock);
+            }
+            if (Validator.equal(inStockObj, true)) {
+                noStock = 0;
+                StaticLog.info("{}", "lv 到货啦!");
+                StaticLog.info("{}", "lv 到货啦!");
+                StaticLog.info("{}", "lv 到货啦!");
+                this.sendEmail("有货啦~~", "lv 到货啦!");
+            } else {
+                Integer notStockLimit = 20;
+                if (noStock == notStockLimit) {
+                    noStock = 0;
+                    this.sendEmail(result, "lv 定时提醒.");
+                }
+                noStock++;
+                StaticLog.info("{}{}", "lv 定时提醒.\\r\\n", result);
+                StaticLog.info("{}{}次", "当前已经执行到", noStock);
+            }
+        } catch (Exception e) {
+            StaticLog.error("checkedInStockSendMail" + ExceptionUtil.getMessage(e));
+            throw e;
+        }
+    }
+
+    private void getLouisVuittonCookies() {
         try {
 
             while (true) {
@@ -152,7 +145,6 @@ public class LvNoticeManager {
         }
     }
 
-
     /**
      * @param e
      */
@@ -174,26 +166,6 @@ public class LvNoticeManager {
     private void sendEmail(String content, String title) {
         if (StringUtils.isNotEmpty(content)) {
             mailService.sendSimpleTextMail(this.to, title, content);
-        }
-    }
-
-    @Scheduled(cron = "0/30 * * * * ?")
-    private void getInetSocketAddressByApi() {
-        String mpUrl = "https://proxyapi.mimvp.com/api/fetchopen?orderid=861176314039185103&country_group=1&http_type=2&result_fields=1,2&result_format=json";
-        String httpsIps = HttpUtil.get(mpUrl);
-        Object result = "";
-        if (StringUtils.isNotEmpty(httpsIps)) {
-            if (JSONUtil.isJson(httpsIps)) {
-                JSONObject jsonObject = JSONUtil.parseObj(httpsIps);
-                JSONArray objects = JSONUtil.parseArray(jsonObject.get("result"));
-                for (Object ipPortObj : objects.toArray()) {
-                    result = JSONUtil.parseObj(ipPortObj).get("ip:port");
-                    if (Validator.isNotEmpty(result)) {
-                        InetSocketAddress inetSocketAddress = new InetSocketAddress(result.toString().split(":")[0], Integer.parseInt(result.toString().split(":")[1]));
-                        inetSocketAddressRedis.sAdd(InetSocketAddressRedis.ip, inetSocketAddress);
-                    }
-                }
-            }
         }
     }
 
