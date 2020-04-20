@@ -4,26 +4,20 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.Validator;
-import cn.hutool.core.util.ReUtil;
-import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.google.common.collect.Lists;
 import com.xth.luxury.notice.domain.GetStocksReqDTO;
 import com.xth.luxury.notice.redis.InetSocketAddressRedis;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
-import javax.validation.GroupSequence;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.List;
@@ -47,6 +41,8 @@ public class LvNoticeManager {
     private com.xth.luxury.notice.redis.InetSocketAddressRedis inetSocketAddressRedis;
     private Integer ipPageNum = 0;
     private int timeOut = 2000;
+    //    String to = "thassange@163.com";
+    String to = "thassange@gmail.com";
 
     //    @Scheduled(cron = "0 0/10 * * * ?")
     @Scheduled(cron = "0/15 * * * * ?")
@@ -184,7 +180,6 @@ public class LvNoticeManager {
      * @param e
      */
     private void sendEmail(Exception e) {
-        String to = "thassange@163.com";
         String subject = "lv 错误提示";
         String content = "";
         if (Validator.isNotNull(e)) {
@@ -192,7 +187,7 @@ public class LvNoticeManager {
         }
 
         if (StringUtils.isNotEmpty(content)) {
-            mailService.sendSimpleTextMail(to, subject, content);
+            mailService.sendSimpleTextMail(this.to, subject, content);
         }
     }
 
@@ -200,9 +195,8 @@ public class LvNoticeManager {
      * @param content
      */
     private void sendEmail(String content, String title) {
-        String to = "thassange@163.com";
         if (StringUtils.isNotEmpty(content)) {
-            mailService.sendSimpleTextMail(to, title, content);
+            mailService.sendSimpleTextMail(this.to, title, content);
         }
     }
 
