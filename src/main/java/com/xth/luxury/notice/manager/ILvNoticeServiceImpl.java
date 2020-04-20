@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
-import java.net.UnknownHostException;
 
 @RestController
 public class ILvNoticeServiceImpl implements ILvNoticeService {
@@ -21,6 +20,6 @@ public class ILvNoticeServiceImpl implements ILvNoticeService {
      */
     @Override
     public String doGetStockStatus(@RequestBody GetStocksReqDTO request) {
-        return lvNoticeManager.aTask2(request);
+        return lvNoticeManager.runLvNoticeByManual();
     }
 }
