@@ -71,22 +71,21 @@ public class LvNoticeManager {
 
     private void checkedInStockSendMail(String result) {
         Object inStockObj = null;
-
         try {
             if (JSONUtil.isJson(result)) {
                 Object skuObj = JSONUtil.parseObj(result).get(sku);
                 inStockObj = JSONUtil.parseObj(skuObj).get(this.inStock);
             }
             if (Validator.equal(inStockObj, true)) {
+                noStock = 0;
                 StaticLog.info("{}", "lv 到货啦!");
                 StaticLog.info("{}", "lv 到货啦!");
                 StaticLog.info("{}", "lv 到货啦!");
                 this.sendEmail("有货啦~~", "lv 到货啦!");
-                noStock = 0;
             } else {
                 if (noStock == this.notStockLimit) {
-                    this.sendEmail(result, "lv 定时提醒.");
                     noStock = 0;
+                    this.sendEmail(result, "lv 定时提醒.");
                 }
                 noStock++;
                 StaticLog.info("{}{}", "lv 定时提醒.\\r\\n", result);
