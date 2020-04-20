@@ -4,15 +4,9 @@ import cn.hutool.core.lang.Console;
 import com.xth.luxury.notice.manager.LvNoticeManager;
 import com.xth.luxury.notice.utils.RedisUtil;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import javax.annotation.Resource;
-import javax.annotation.Resources;
-import java.net.InetSocketAddress;
-import java.util.List;
 
 @SpringBootTest
 class NoticeApplicationTests {
@@ -24,7 +18,6 @@ class NoticeApplicationTests {
 
     @Test
     void contextLoads() {
-
     }
 
 

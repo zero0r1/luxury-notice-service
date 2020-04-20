@@ -2,7 +2,6 @@ package com.xth.luxury.notice.manager;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.exceptions.ExceptionUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.Validator;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
@@ -10,6 +9,7 @@ import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import cn.hutool.log.StaticLog;
 import com.xth.luxury.notice.domain.GetStocksReqDTO;
 import com.xth.luxury.notice.redis.InetSocketAddressRedis;
 import org.apache.commons.lang3.StringUtils;
@@ -41,37 +41,32 @@ public class LvNoticeManager {
     private com.xth.luxury.notice.redis.InetSocketAddressRedis inetSocketAddressRedis;
     private Integer ipPageNum = 0;
     private int timeOut = 2000;
-    //    String to = "thassange@163.com";
-    String to = "thassange@gmail.com";
+    String to = "thassange@163.com";
 
-    //    @Scheduled(cron = "0 0/10 * * * ?")
     @Scheduled(cron = "0/15 * * * * ?")
     public void aTask() {
         String result = "";
-
         try {
-//            socketAddressList = this.getInetSocketAddressByXiCi();
+            StaticLog.info("{}{}", "任务开始", "15s 一次");
             this.getLouisVuittonCookies(null);
             result = this.getSkuStock(result);
             this.checkedInStockSendMail(result);
-//            this.sendEmail(result);
         } catch (Exception e) {
-            throw e;
+            StaticLog.error("aTask Scheduled" + ExceptionUtil.getMessage(e));
         }
     }
 
     public String aTask2(GetStocksReqDTO request) {
         String result = "";
         try {
-//            socketAddressList = this.getInetSocketAddressByXiCi();
             this.getLouisVuittonCookies(request);
             result = this.getSkuStock(result);
             this.checkedInStockSendMail(result);
-//            this.sendEmail(result);
             return result;
         } catch (Exception e) {
-            throw e;
+            StaticLog.error("aTask" + ExceptionUtil.getMessage(e));
         }
+        return result;
     }
 
     private void checkedInStockSendMail(String result) {
@@ -90,11 +85,12 @@ public class LvNoticeManager {
                     this.sendEmail(result, "lv 定时提醒.");
                     noStock = 0;
                 }
+                StaticLog.info("{}\r\n,{}", "lv 定时提醒.", result);
                 noStock++;
+                StaticLog.info("{}\r\n,{}", "当前已经执行到", noStock);
             }
         } catch (Exception e) {
-            this.sendEmail(e);
-            Console.log(ExceptionUtil.getMessage(e));
+            StaticLog.error("checkedInStockSendMail" + ExceptionUtil.getMessage(e));
             throw e;
         }
     }
@@ -129,8 +125,7 @@ public class LvNoticeManager {
             }
         } catch (Exception e) {
             cookie = null;
-            this.sendEmail(e);
-            Console.log(ExceptionUtil.getMessage(e));
+            StaticLog.error("getSkuStock" + ExceptionUtil.getMessage(e));
             throw e;
         }
 
@@ -167,10 +162,8 @@ public class LvNoticeManager {
                     return;
                 }
             }
-        } catch (
-                Exception e) {
-            this.sendEmail(e);
-            Console.log(ExceptionUtil.getMessage(e));
+        } catch (Exception e) {
+            StaticLog.error("aTask Scheduled" + ExceptionUtil.getMessage(e));
             throw e;
         }
     }
