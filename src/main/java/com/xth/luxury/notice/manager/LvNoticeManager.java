@@ -78,6 +78,9 @@ public class LvNoticeManager {
                 inStockObj = JSONUtil.parseObj(skuObj).get(this.inStock);
             }
             if (Validator.equal(inStockObj, true)) {
+                StaticLog.info("{}", "lv 到货啦!");
+                StaticLog.info("{}", "lv 到货啦!");
+                StaticLog.info("{}", "lv 到货啦!");
                 this.sendEmail("有货啦~~", "lv 到货啦!");
                 noStock = 0;
             } else {
@@ -85,9 +88,9 @@ public class LvNoticeManager {
                     this.sendEmail(result, "lv 定时提醒.");
                     noStock = 0;
                 }
-                StaticLog.info("{}\r\n,{}", "lv 定时提醒.", result);
                 noStock++;
-                StaticLog.info("{}\r\n,{}", "当前已经执行到", noStock);
+                StaticLog.info("{}{}", "lv 定时提醒.\\r\\n", result);
+                StaticLog.info("{}{}次", "当前已经执行到", noStock);
             }
         } catch (Exception e) {
             StaticLog.error("checkedInStockSendMail" + ExceptionUtil.getMessage(e));
