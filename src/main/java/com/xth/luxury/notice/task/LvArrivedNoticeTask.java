@@ -32,11 +32,11 @@ public class LvArrivedNoticeTask extends AbstractTask {
         super.REDIS_KEY = InetSocketAddressRedis.ip;
     }
 
-    @Scheduled(cron = "0/5 * * * * ?")
+    @Scheduled(cron = "0/10 * * * * ?")
     @Override
     public void run() {
         try {
-            StaticLog.info("{}{}", "任务开始", "15s 一次");
+            StaticLog.info("{}{}", "任务开始", "10s 一次");
             this.getCookies();
             this.getSkuStock();
             this.checkedInStockSendMail();
