@@ -1,176 +1,135 @@
 package com.xth.luxury.notice.task;
 
-import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.lang.Validator;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.StaticLog;
-import com.xth.luxury.notice.manager.MailService;
 import com.xth.luxury.notice.redis.InetSocketAddressRedis;
+import com.xth.luxury.notice.task.abstracts.AbstractTask;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import javax.annotation.PostConstruct;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.util.List;
 
 @Component
-public class LvArrivedNoticeTask {
-    @Resource
-    private MailService mailService;
-    private final String sku = "N41207";
-    public final String url = "https://secure.louisvuitton.cn/ajaxsecure/getStockLevel.jsp?storeLang=zhs-cn&pageType=storelocator_section&skuIdList=" + sku + "&null&_=1586758087289";
-    public final String homePage = "https://www.louisvuitton.cn/zhs-cn/homepage";
-    private int noStock = 0;
-    public String cookie = "";
-    @Resource
-    private com.xth.luxury.notice.redis.InetSocketAddressRedis inetSocketAddressRedis;
-    private int timeOut = 2000;
-    String to = "thassange@163.com";
+public class LvArrivedNoticeTask extends AbstractTask {
+    String result = "";
 
-    @Scheduled(cron = "0/15 * * * * ?")
-    public void runLvNotice() {
-        String result = "";
+    @PostConstruct
+    public void init() {
+        super.SKU = "N41207";
+        super.URL = "https://secure.louisvuitton.cn/ajaxsecure/getStockLevel.jsp?storeLang=zhs-cn&pageType=storelocator_section&skuIdList=" + SKU + "&null&_=1586758087289";
+        super.HOME_PAGE = "https://www.louisvuitton.cn/zhs-cn/homepage";
+        super.NO_STOCK = 0;
+        super.COOKIE = "";
+        super.TIME_OUT = 2000;
+        super.TO = "thassange@163.com";
+        super.REDIS_KEY = InetSocketAddressRedis.ip;
+    }
+
+    @Scheduled(cron = "0/5 * * * * ?")
+    @Override
+    public void run() {
         try {
             StaticLog.info("{}{}", "任务开始", "15s 一次");
-            this.getLouisVuittonCookies();
-            result = this.getSkuStock(result);
-            this.checkedInStockSendMail(result);
+            this.getCookies();
+            this.getSkuStock();
+            this.checkedInStockSendMail();
         } catch (Exception e) {
             StaticLog.error("aTask Scheduled" + ExceptionUtil.getMessage(e));
         }
     }
 
     /**
-     * @param result
-     * @return
+     * 获取 cookies
      */
-    private String getSkuStock(String result) {
-        try {
-
-            while (true) {
+    @Override
+    public void getCookies() {
+        Proxy proxy;
+        HttpResponse execute;
+        InetSocketAddress socketAddressItem;
+        while (true) {
+            socketAddressItem = super.getInetSocketAddress(super.REDIS_KEY);
+            if (socketAddressItem != null) {
+                StaticLog.info("{}{}{}", "getCookies", socketAddressItem, "开始执行...");
+                proxy = new Proxy(Proxy.Type.HTTP, socketAddressItem);
                 try {
-                    InetSocketAddress socketAddressItem = this.getInetSocketAddress();
-                    if (socketAddressItem == null) {
-                        return "";
-                    }
-                    Proxy proxy = new Proxy(Proxy.Type.HTTP, socketAddressItem);
-                    result = HttpRequest.post(url)
+                    execute = HttpRequest.get(super.HOME_PAGE)
                             .setProxy(proxy)
-                            .cookie(cookie)
+                            .timeout(super.TIME_OUT)
+                            .cookie(super.COOKIE)
+                            .execute();
+
+                    super.COOKIE = execute.getCookieStr();
+                    return;
+                } catch (Exception ignored) {
+                    inetSocketAddressRedis.sRemove(super.REDIS_KEY, socketAddressItem);
+                }
+            }
+        }
+    }
+
+    /**
+     * 获取库存
+     */
+    private void getSkuStock() {
+        Proxy proxy;
+        InetSocketAddress socketAddressItem;
+        do {
+            socketAddressItem = super.getInetSocketAddress(super.REDIS_KEY);
+            if (socketAddressItem != null) {
+                StaticLog.info("{}{}{}", "getSkuStock", socketAddressItem, "开始执行...");
+                try {
+                    proxy = new Proxy(Proxy.Type.HTTP, socketAddressItem);
+                    result = HttpRequest.post(super.URL)
+                            .setProxy(proxy)
+                            .cookie(super.COOKIE)
                             //超时，毫秒
-                            .timeout(timeOut)
+                            .timeout(super.TIME_OUT)
                             .execute()
                             .body();
                 } catch (Exception ignored) {
-                }
-
-                if (StringUtils.isNotEmpty(result) && JSONUtil.isJson(result)) {
-                    break;
+                    inetSocketAddressRedis.sRemove(super.REDIS_KEY, socketAddressItem);
                 }
             }
-        } catch (Exception e) {
-            cookie = null;
-            StaticLog.error("getSkuStock" + ExceptionUtil.getMessage(e));
-            throw e;
-        }
+        } while (Validator.isEmpty(result) || !JSONUtil.isJson(result));
 
-        if (StringUtils.isNotEmpty(result)) {
-            result = result.trim();
-        }
-        return JSONUtil.formatJsonStr(result);
+        result = StringUtils.deleteWhitespace(result);
+        result = JSONUtil.formatJsonStr(result);
     }
 
-    private void checkedInStockSendMail(String result) {
+    private void checkedInStockSendMail() {
         Object inStockObj = null;
         try {
+            StaticLog.info("{}{}", "checkedInStockSendMail", "开始执行...");
             if (JSONUtil.isJson(result)) {
-                Object skuObj = JSONUtil.parseObj(result).get(sku);
+                Object skuObj = JSONUtil.parseObj(result).get(SKU);
                 String inStock = "inStock";
                 inStockObj = JSONUtil.parseObj(skuObj).get(inStock);
             }
             if (Validator.equal(inStockObj, true)) {
-                noStock = 0;
+                super.NO_STOCK = 0;
                 StaticLog.info("{}", "lv 到货啦!");
                 StaticLog.info("{}", "lv 到货啦!");
                 StaticLog.info("{}", "lv 到货啦!");
-                this.sendEmail("有货啦~~", "lv 到货啦!");
+                super.sendEmail("有货啦~~", "lv 到货啦!");
             } else {
                 Integer notStockLimit = 20;
-                if (noStock == notStockLimit) {
-                    noStock = 0;
-                    this.sendEmail(result, "lv 定时提醒.");
+                if (super.NO_STOCK.equals(notStockLimit)) {
+                    super.NO_STOCK = 0;
+                    super.sendEmail(result, "lv 定时提醒.");
                 }
-                noStock++;
+                super.NO_STOCK++;
                 StaticLog.info("{}{}", "lv 定时提醒.\\r\\n", result);
-                StaticLog.info("{}{}次", "当前已经执行到", noStock);
+                StaticLog.info("{}{}次", "当前已经执行到", super.NO_STOCK);
             }
         } catch (Exception e) {
             StaticLog.error("checkedInStockSendMail" + ExceptionUtil.getMessage(e));
-            throw e;
         }
-    }
-
-    private void getLouisVuittonCookies() {
-        try {
-
-            while (true) {
-                InetSocketAddress socketAddressItem = this.getInetSocketAddress();
-                if (socketAddressItem == null) {
-                    return;
-                }
-                Proxy proxy = new Proxy(Proxy.Type.HTTP, socketAddressItem);
-                HttpResponse execute = null;
-                try {
-                    execute = HttpRequest.get(homePage)
-                            .setProxy(proxy)
-                            .timeout(timeOut)
-                            .cookie(cookie)
-                            .execute();
-                } catch (Exception ignored) {
-                    inetSocketAddressRedis.sRemove(InetSocketAddressRedis.ip, socketAddressItem);
-                }
-                if (execute != null) {
-                    cookie = execute.getCookieStr();
-                    return;
-                }
-            }
-        } catch (Exception e) {
-            StaticLog.error("aTask Scheduled" + ExceptionUtil.getMessage(e));
-            throw e;
-        }
-    }
-
-    /**
-     * @param e
-     */
-    private void sendEmail(Exception e) {
-        String subject = "lv 错误提示";
-        String content = "";
-        if (Validator.isNotNull(e)) {
-            content = ExceptionUtil.getMessage(e);
-        }
-
-        if (StringUtils.isNotEmpty(content)) {
-            mailService.sendSimpleTextMail(this.to, subject, content);
-        }
-    }
-
-    /**
-     * @param content
-     */
-    private void sendEmail(String content, String title) {
-        if (StringUtils.isNotEmpty(content)) {
-            mailService.sendSimpleTextMail(this.to, title, content);
-        }
-    }
-
-    private InetSocketAddress getInetSocketAddress() {
-        List<InetSocketAddress> socketAddressList = inetSocketAddressRedis.sPop(InetSocketAddressRedis.ip, 1);
-        return !CollectionUtil.isEmpty(socketAddressList) ? socketAddressList.get(0) : null;
     }
 }
