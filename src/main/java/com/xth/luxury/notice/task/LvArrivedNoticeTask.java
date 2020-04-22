@@ -75,6 +75,8 @@ public class LvArrivedNoticeTask extends AbstractTask {
                 } catch (Exception ignored) {
                     inetSocketAddressRedis.sRemove(super.REDIS_KEY, socketAddressItem);
                 }
+            } else {
+                return;
             }
         }
     }
@@ -101,6 +103,8 @@ public class LvArrivedNoticeTask extends AbstractTask {
                 } catch (Exception ignored) {
                     inetSocketAddressRedis.sRemove(super.REDIS_KEY, socketAddressItem);
                 }
+            } else {
+                return;
             }
         } while (Validator.isEmpty(result) || !JSONUtil.isJson(result));
 
