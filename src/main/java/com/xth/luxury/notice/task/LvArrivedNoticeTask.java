@@ -9,7 +9,7 @@ import cn.hutool.log.StaticLog;
 import com.xth.luxury.notice.redis.InetSocketAddressRedis;
 import com.xth.luxury.notice.task.abstracts.AbstractTask;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +21,6 @@ import java.net.Proxy;
  * @author shawn
  */
 @Component
-@EnableScheduling
 public class LvArrivedNoticeTask extends AbstractTask {
     String result = "";
 
@@ -37,6 +36,7 @@ public class LvArrivedNoticeTask extends AbstractTask {
         super.REDIS_KEY = InetSocketAddressRedis.ip;
     }
 
+    @Async
     @Scheduled(cron = "0/10 * * * * ?")
     @Override
     public void run() {
