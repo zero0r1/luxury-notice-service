@@ -26,24 +26,32 @@ public class MiMvpTask {
 
     @Scheduled(cron = "0/30 * * * * ?")
     private void getInetSocketAddressByApi() {
-        StaticLog.info("{}{}", "getInetSocketAddressByApi", "开始获取...");
-        String mpUrl = "https://proxyapi.mimvp.com/api/fetchopen?orderid=861176314039185103&country_group=1&http_type=2&result_fields=1,2&result_format=json";
-        String httpsIps = HttpUtil.get(mpUrl);
-        Object result = "";
-        InetSocketAddress inetSocketAddress;
+        boolean hasException = false;
+        do {
+            try {
+                StaticLog.info("{}{}", "getInetSocketAddressByApi", "开始获取...");
+                String mpUrl = "https://proxyapi.mimvp.com/api/fetchopen?orderid=861176314039185103&country_group=1&http_type=2&result_fields=1,2&result_format=json";
+                String httpsIps = HttpUtil.get(mpUrl);
+                Object result = "";
+                InetSocketAddress inetSocketAddress;
 
-        if (StringUtils.isNotEmpty(httpsIps)) {
-            if (JSONUtil.isJson(httpsIps)) {
-                JSONObject jsonObject = JSONUtil.parseObj(httpsIps);
-                JSONArray objects = JSONUtil.parseArray(jsonObject.get("result"));
-                for (Object ipPortObj : objects.toArray()) {
-                    result = JSONUtil.parseObj(ipPortObj).get("ip:port");
-                    if (Validator.isNotEmpty(result)) {
-                        inetSocketAddress = new InetSocketAddress(result.toString().split(":")[0], Integer.parseInt(result.toString().split(":")[1]));
-                        inetSocketAddressRedis.sAdd(InetSocketAddressRedis.ip, inetSocketAddress);
+                if (StringUtils.isNotEmpty(httpsIps)) {
+                    if (JSONUtil.isJson(httpsIps)) {
+                        JSONObject jsonObject = JSONUtil.parseObj(httpsIps);
+                        JSONArray objects = JSONUtil.parseArray(jsonObject.get("result"));
+                        for (Object ipPortObj : objects.toArray()) {
+                            result = JSONUtil.parseObj(ipPortObj).get("ip:port");
+                            if (Validator.isNotEmpty(result)) {
+                                inetSocketAddress = new InetSocketAddress(result.toString().split(":")[0], Integer.parseInt(result.toString().split(":")[1]));
+                                inetSocketAddressRedis.sAdd(InetSocketAddressRedis.ip, inetSocketAddress);
+                            }
+                        }
                     }
                 }
+                hasException = false;
+            } catch (Exception e) {
+                hasException = true;
             }
-        }
+        } while (hasException);
     }
 }
