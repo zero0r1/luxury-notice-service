@@ -8,7 +8,7 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.log.StaticLog;
 import com.xth.luxury.notice.redis.InetSocketAddressRedis;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -19,13 +19,13 @@ import java.net.InetSocketAddress;
  * @author shawn
  */
 @Component
-@EnableScheduling
 public class MiMvpTask {
 
     @Resource
     private InetSocketAddressRedis inetSocketAddressRedis;
     private int timeOUt = 2000;
 
+    @Async
     @Scheduled(cron = "0/30 * * * * ?")
     public void getInetSocketAddressByApi() {
         boolean hasException = false;
