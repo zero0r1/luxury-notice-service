@@ -1,7 +1,7 @@
 package com.xth.luxury.notice.task;
 
 import cn.hutool.core.lang.Validator;
-import cn.hutool.http.HttpUtil;
+import cn.hutool.http.HttpRequest;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -22,16 +22,20 @@ public class MiMvpTask {
 
     @Resource
     private InetSocketAddressRedis inetSocketAddressRedis;
-
+    private int timeOUt = 2000;
 
     @Scheduled(cron = "0/30 * * * * ?")
-    private void getInetSocketAddressByApi() {
+    public void getInetSocketAddressByApi() {
         boolean hasException = false;
         do {
             try {
                 StaticLog.info("{}{}", "getInetSocketAddressByApi", "开始获取...");
                 String mpUrl = "https://proxyapi.mimvp.com/api/fetchopen?orderid=861176314039185103&country_group=1&http_type=2&result_fields=1,2&result_format=json";
-                String httpsIps = HttpUtil.get(mpUrl);
+                String httpsIps = HttpRequest.get(mpUrl)
+                        .timeout(timeOUt)
+                        .execute()
+                        .body();
+
                 Object result = "";
                 InetSocketAddress inetSocketAddress;
 
@@ -49,6 +53,7 @@ public class MiMvpTask {
                     }
                 }
                 hasException = false;
+                StaticLog.info("{}{}", "getInetSocketAddressByApi", "结束...");
             } catch (Exception e) {
                 hasException = true;
             }
