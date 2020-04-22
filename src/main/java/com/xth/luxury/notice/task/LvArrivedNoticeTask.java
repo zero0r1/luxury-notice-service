@@ -16,6 +16,9 @@ import javax.annotation.PostConstruct;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 
+/**
+ * @author shawn
+ */
 @Component
 public class LvArrivedNoticeTask extends AbstractTask {
     String result = "";
