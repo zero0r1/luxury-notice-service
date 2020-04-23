@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.lang.Validator;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpUtil;
+import cn.hutool.json.JSONUtil;
 import cn.hutool.log.StaticLog;
 import com.xth.luxury.notice.manager.MailService;
 import com.xth.luxury.notice.redis.InetSocketAddressRedis;
@@ -49,11 +50,15 @@ public abstract class AbstractTask {
     public void sendNoticeMsg(String content, String title, String msgType) {
         if (StringUtils.isNotEmpty(content)) {
             if (Validator.isNull(msgType)) {
+                String token = HttpUtil.get("https://oapi.dingtalk.com/gettoken?appkey=dingzmdnhqspdfjbst1l&appsecret=2l4MDbWhm-XIeyCnwaO6D3r8vrJIiKvyuSmspqNl-OL38Xb63zLuVPuegXawCMZr");
+                if (JSONUtil.isJson(token)) {
 
-                String requestParams = "{\"chatid\":\"chat47a302dce354eded2a3592a4f8efe72a\",\"msg\":{\"msgtype\":\"text\",\"text\":{\"content\":\"{}\"}}}";
-                String post = HttpUtil.post("https://oapi.dingtalk.com/chat/send?access_token=22cfa2724ed53660b2ea62524563ed0c"
-                        , StrUtil.format(requestParams, StrUtil.replace(content, "\"", "\\\"")));
-                StaticLog.info("【钉钉通知】成功发送！to={}", post);
+                    Object access_token = JSONUtil.parseObj(token).get("access_token");
+                    String requestParams = "{\"chatid\":\"chat47a302dce354eded2a3592a4f8efe72a\",\"msg\":{\"msgtype\":\"text\",\"text\":{\"content\":\"{}\"}}}";
+                    String post = HttpUtil.post(StrUtil.format("https://oapi.dingtalk.com/chat/send?access_token={}", access_token)
+                            , StrUtil.format(requestParams, StrUtil.replace(content, "\"", "\\\"")));
+                    StaticLog.info("【钉钉通知】成功发送！to={}", post);
+                }
             } else {
                 mailService.sendSimpleTextMail(this.TO, title, content);
             }
