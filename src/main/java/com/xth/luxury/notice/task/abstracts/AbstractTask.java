@@ -1,6 +1,9 @@
 package com.xth.luxury.notice.task.abstracts;
 
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.lang.Validator;
+import cn.hutool.http.HttpUtil;
+import cn.hutool.log.StaticLog;
 import com.xth.luxury.notice.manager.MailService;
 import com.xth.luxury.notice.redis.InetSocketAddressRedis;
 import org.apache.commons.lang3.StringUtils;
@@ -42,9 +45,15 @@ public abstract class AbstractTask {
      * @param content 内容
      * @param title   标题
      */
-    public void sendEmail(String content, String title) {
+    public void sendNoticeMsg(String content, String title, String msgType) {
         if (StringUtils.isNotEmpty(content)) {
-            mailService.sendSimpleTextMail(this.TO, title, content);
+            if (Validator.isNull(msgType)) {
+                String post = HttpUtil.post("https://oapi.dingtalk.com/chat/send?access_token=22cfa2724ed53660b2ea62524563ed0c"
+                        , "{\"chatid\":\"chat47a302dce354eded2a3592a4f8efe72a\",\"msg\":{\"msgtype\":\"text\",\"text\":{\"content\":\"text\"}}}");
+                StaticLog.info("【文本邮件】成功发送！to={}", post);
+            } else {
+                mailService.sendSimpleTextMail(this.TO, title, content);
+            }
         }
     }
 

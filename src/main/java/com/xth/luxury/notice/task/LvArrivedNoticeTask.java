@@ -126,12 +126,12 @@ public class LvArrivedNoticeTask extends AbstractTask {
                 StaticLog.info("{}", "lv 到货啦!");
                 StaticLog.info("{}", "lv 到货啦!");
                 StaticLog.info("{}", "lv 到货啦!");
-                super.sendEmail("有货啦~~", "lv 到货啦!");
+                super.sendNoticeMsg("有货啦~~", "lv 到货啦!", null);
             } else {
                 Integer notStockLimit = 20;
                 if (super.NO_STOCK.equals(notStockLimit)) {
                     super.NO_STOCK = 0;
-                    super.sendEmail(result, "lv 定时提醒.");
+                    super.sendNoticeMsg(result, "lv 定时提醒.", null);
                 }
                 super.NO_STOCK++;
                 StaticLog.info("{}{}", "lv 定时提醒.\\r\\n", result);
