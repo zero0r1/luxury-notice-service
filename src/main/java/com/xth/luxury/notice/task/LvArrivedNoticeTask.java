@@ -46,7 +46,7 @@ public class LvArrivedNoticeTask extends AbstractTask {
             this.getSkuStock();
             this.checkedInStockSendMail();
         } catch (Exception e) {
-            StaticLog.error("aTask Scheduled" + ExceptionUtil.getMessage(e));
+            StaticLog.error("aTask Scheduled" + ExceptionUtil.getMessage(e));;
         }
     }
 
