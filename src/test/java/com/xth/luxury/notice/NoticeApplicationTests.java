@@ -19,10 +19,9 @@ class NoticeApplicationTests {
 
     @Test
     void contextLoads() {
-        String post = HttpUtil.post("https://oapi.dingtalk.com/topapi/message/corpconversation/asyncsend_v2?access_token=22cfa2724ed53660b2ea62524563ed0c"
-                , "{\"agent_id\":\"736370475\",\"msg\":{\"msgtype\":\"text\",\"text\":{\"content\":\"text3\"}},\"userid_list\":\"manager8868\"}");
+        String post = HttpUtil.post("https://oapi.dingtalk.com/chat/send?access_token=22cfa2724ed53660b2ea62524563ed0c"
+                , "{\"chatid\":\"chat47a302dce354eded2a3592a4f8efe72a\",\"msg\":{\"msgtype\":\"text\",\"text\":{\"content\":\"text\"}}}");
         Console.log(post);
-
     }
 
 
