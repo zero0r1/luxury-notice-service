@@ -49,8 +49,10 @@ public abstract class AbstractTask {
     public void sendNoticeMsg(String content, String title, String msgType) {
         if (StringUtils.isNotEmpty(content)) {
             if (Validator.isNull(msgType)) {
+
+                String requestParams = "{\"chatid\":\"chat47a302dce354eded2a3592a4f8efe72a\",\"msg\":{\"msgtype\":\"text\",\"text\":{\"content\":\"{}\"}}}";
                 String post = HttpUtil.post("https://oapi.dingtalk.com/chat/send?access_token=22cfa2724ed53660b2ea62524563ed0c"
-                        , StrUtil.format("{\"chatid\":\"chat47a302dce354eded2a3592a4f8efe72a\",\"msg\":{\"msgtype\":\"text\",\"text\":{\"content\":\"{}\"}}}", content));
+                        , StrUtil.format(requestParams, StrUtil.replace(content, "\"", "\\\"")));
                 StaticLog.info("【钉钉通知】成功发送！to={}", post);
             } else {
                 mailService.sendSimpleTextMail(this.TO, title, content);
