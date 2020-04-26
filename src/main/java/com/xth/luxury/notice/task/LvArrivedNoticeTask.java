@@ -26,7 +26,7 @@ public class LvArrivedNoticeTask extends AbstractTask {
 
     @PostConstruct
     public void init() {
-        super.SKU = "N41207";
+        super.SKU = "M40712";
         super.URL = "https://secure.louisvuitton.cn/ajaxsecure/getStockLevel.jsp?storeLang=zhs-cn&pageType=storelocator_section&skuIdList=" + SKU + "&null&_=1586758087289";
         super.HOME_PAGE = "https://www.louisvuitton.cn/zhs-cn/homepage";
         super.NO_STOCK = 0;
