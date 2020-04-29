@@ -112,6 +112,9 @@ public class LvArrivedNoticeTask extends AbstractTask {
         result = JSONUtil.formatJsonStr(result);
     }
 
+    /**
+     * 检查库存并发送邮件
+     */
     private void checkedInStockSendMail() {
         Object inStockObj = null;
         try {
