@@ -6,6 +6,8 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.StaticLog;
+import com.xth.luxury.notice.domain.SelfInetSocketAddress;
+import com.xth.luxury.notice.mapper.IpPoolMapper;
 import com.xth.luxury.notice.redis.InetSocketAddressRedis;
 import com.xth.luxury.notice.task.abstracts.AbstractTask;
 import org.apache.commons.lang3.StringUtils;
@@ -14,7 +16,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.net.InetSocketAddress;
+import javax.annotation.Resource;
 import java.net.Proxy;
 
 /**
@@ -22,6 +24,9 @@ import java.net.Proxy;
  */
 @Component
 public class LvArrivedNoticeTask extends AbstractTask {
+    @Resource
+    private IpPoolMapper ipPoolMapper;
+
     String result = "";
 
     @PostConstruct
@@ -37,7 +42,7 @@ public class LvArrivedNoticeTask extends AbstractTask {
     }
 
     @Async
-    @Scheduled(cron = "0/10 * * * * ?")
+    @Scheduled(fixedDelay = 10 * 1000, initialDelay = 0L)
     @Override
     public void run() {
         try {
@@ -57,12 +62,12 @@ public class LvArrivedNoticeTask extends AbstractTask {
     public void getCookies() {
         Proxy proxy;
         HttpResponse execute;
-        InetSocketAddress socketAddressItem;
+        SelfInetSocketAddress socketAddressItem;
         while (true) {
-            socketAddressItem = super.getInetSocketAddress(super.REDIS_KEY);
+            socketAddressItem = super.getInetSocketAddress();
             if (socketAddressItem != null) {
                 StaticLog.info("{}{}{}", "getCookies", socketAddressItem, "开始执行...");
-                proxy = new Proxy(Proxy.Type.HTTP, socketAddressItem);
+                proxy = new Proxy(Proxy.Type.HTTP, socketAddressItem.getInetSocketAddress());
                 try {
                     execute = HttpRequest.get(super.HOME_PAGE)
                             .setProxy(proxy)
@@ -73,7 +78,7 @@ public class LvArrivedNoticeTask extends AbstractTask {
                     super.COOKIE = execute.getCookieStr();
                     return;
                 } catch (Exception ignored) {
-                    inetSocketAddressRedis.sRemove(super.REDIS_KEY, socketAddressItem);
+                    ipPoolMapper.deleteById(socketAddressItem.getId());
                 }
             } else {
                 return;
@@ -86,13 +91,13 @@ public class LvArrivedNoticeTask extends AbstractTask {
      */
     private void getSkuStock() {
         Proxy proxy;
-        InetSocketAddress socketAddressItem;
+        SelfInetSocketAddress socketAddressItem;
         do {
-            socketAddressItem = super.getInetSocketAddress(super.REDIS_KEY);
+            socketAddressItem = super.getInetSocketAddress();
             if (socketAddressItem != null) {
                 StaticLog.info("{}{}{}", "getSkuStock", socketAddressItem, "开始执行...");
                 try {
-                    proxy = new Proxy(Proxy.Type.HTTP, socketAddressItem);
+                    proxy = new Proxy(Proxy.Type.HTTP, socketAddressItem.getInetSocketAddress());
                     result = HttpRequest.post(super.URL)
                             .setProxy(proxy)
                             .cookie(super.COOKIE)
@@ -101,7 +106,7 @@ public class LvArrivedNoticeTask extends AbstractTask {
                             .execute()
                             .body();
                 } catch (Exception ignored) {
-                    inetSocketAddressRedis.sRemove(super.REDIS_KEY, socketAddressItem);
+                    ipPoolMapper.deleteById(socketAddressItem.getId());
                 }
             } else {
                 return;

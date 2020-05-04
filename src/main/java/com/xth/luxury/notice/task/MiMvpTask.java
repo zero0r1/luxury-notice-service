@@ -6,7 +6,8 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.StaticLog;
-import com.xth.luxury.notice.redis.InetSocketAddressRedis;
+import com.xth.luxury.notice.domain.IpPoolDO;
+import com.xth.luxury.notice.mapper.IpPoolMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -20,19 +21,20 @@ import java.net.InetSocketAddress;
  */
 @Component
 public class MiMvpTask {
-
+    //        @Resource
+//    private InetSocketAddressRedis inetSocketAddressRedis;
     @Resource
-    private InetSocketAddressRedis inetSocketAddressRedis;
-    private int timeOUt = 2000;
+    private IpPoolMapper ipPoolMapper;
 
     @Async
-    @Scheduled(cron = "0/30 * * * * ?")
+    @Scheduled(fixedDelay = 30 * 1000, initialDelay = 0L)
     public void getInetSocketAddressByApi() {
         boolean hasException = false;
         do {
             try {
                 StaticLog.info("{}{}", "getInetSocketAddressByApi", "开始获取...");
                 String mpUrl = "https://proxyapi.mimvp.com/api/fetchopen?orderid=861176314039185103&country_group=1&http_type=2&result_fields=1,2&result_format=json";
+                int timeOUt = 2000;
                 String httpsIps = HttpRequest.get(mpUrl)
                         .timeout(timeOUt)
                         .execute()
@@ -48,8 +50,9 @@ public class MiMvpTask {
                         for (Object ipPortObj : objects.toArray()) {
                             result = JSONUtil.parseObj(ipPortObj).get("ip:port");
                             if (Validator.isNotEmpty(result)) {
-                                inetSocketAddress = new InetSocketAddress(result.toString().split(":")[0], Integer.parseInt(result.toString().split(":")[1]));
-                                inetSocketAddressRedis.sAdd(InetSocketAddressRedis.ip, inetSocketAddress);
+                                ipPoolMapper.insert(this.buildIpPoolDO(result));
+//                                inetSocketAddress = new InetSocketAddress(result.toString().split(":")[0], Integer.parseInt(result.toString().split(":")[1]));
+//                                inetSocketAddressRedis.sAdd(InetSocketAddressRedis.ip, inetSocketAddress);
                             }
                         }
                     }
@@ -60,5 +63,12 @@ public class MiMvpTask {
                 hasException = true;
             }
         } while (hasException);
+    }
+
+    private IpPoolDO buildIpPoolDO(Object result) {
+        IpPoolDO ipPoolDO = IpPoolDO.builder().build();
+        ipPoolDO.setIp(result.toString().split(":")[0]);
+        ipPoolDO.setPort(Integer.parseInt(result.toString().split(":")[1]));
+        return ipPoolDO;
     }
 }

@@ -1,26 +1,28 @@
 package com.xth.luxury.notice.task.abstracts;
 
-import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.lang.Validator;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.StaticLog;
+import com.xth.luxury.notice.domain.IpPoolDO;
+import com.xth.luxury.notice.domain.SelfInetSocketAddress;
 import com.xth.luxury.notice.manager.MailService;
-import com.xth.luxury.notice.redis.InetSocketAddressRedis;
+import com.xth.luxury.notice.mapper.IpPoolMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.net.InetSocketAddress;
-import java.util.List;
 
 @Component
 public abstract class AbstractTask {
     @Resource
     public MailService mailService;
     @Resource
-    public InetSocketAddressRedis inetSocketAddressRedis;
+    private IpPoolMapper ipPoolMapper;
+    //    @Resource
+//    public InetSocketAddressRedis inetSocketAddressRedis;
     public String SKU = "";
     public String URL = "";
     public String HOME_PAGE = "";
@@ -33,12 +35,19 @@ public abstract class AbstractTask {
     /**
      * 获取地址
      *
-     * @param key redis key
      * @return inet 地址
      */
-    public InetSocketAddress getInetSocketAddress(String key) {
-        List<InetSocketAddress> socketAddressList = inetSocketAddressRedis.sPop(key, 1);
-        return !CollectionUtil.isEmpty(socketAddressList) ? socketAddressList.get(0) : null;
+    public SelfInetSocketAddress getInetSocketAddress() {
+        IpPoolDO one = ipPoolMapper.getOne();
+        if (Validator.isNotNull(one)) {
+            return SelfInetSocketAddress.builder()
+                    .id(one.getId())
+                    .inetSocketAddress(new InetSocketAddress(one.getIp(), one.getPort()))
+                    .build();
+        }
+        return null;
+//        List<InetSocketAddress> socketAddressList = inetSocketAddressRedis.sPop(key, 1);
+//        return !CollectionUtil.isEmpty(socketAddressList) ? socketAddressList.get(0) : null;
     }
 
     /**
