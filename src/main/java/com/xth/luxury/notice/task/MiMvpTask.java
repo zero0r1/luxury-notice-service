@@ -31,6 +31,10 @@ public class MiMvpTask {
     public void getInetSocketAddressByApi() {
         boolean hasException = false;
         do {
+            Integer count = ipPoolMapper.getCount();
+            if (count >= 100) {
+                return;
+            }
             try {
                 StaticLog.info("{}{}", "getInetSocketAddressByApi", "开始获取...");
                 String mpUrl = "https://proxyapi.mimvp.com/api/fetchopen?orderid=861176314039185103&country_group=1&http_type=2&result_fields=1,2&result_format=json";

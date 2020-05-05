@@ -14,6 +14,9 @@ public interface IpPoolMapper {
     @Select("SELECT * FROM IP_POOL LIMIT 0,1")
     IpPoolDO getOne();
 
+    @Select("SELECT COUNT(*) FROM IP_POOL")
+    Integer getCount();
+
     @Delete("DELETE FROM IP_POOL WHERE id = #{id}")
     void deleteById(Integer id);
 }
