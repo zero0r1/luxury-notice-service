@@ -14,27 +14,26 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.net.InetSocketAddress;
 
 /**
  * @author shawn
  */
 @Component
 public class MiMvpTask {
-    //        @Resource
-//    private InetSocketAddressRedis inetSocketAddressRedis;
     @Resource
     private IpPoolMapper ipPoolMapper;
 
     @Async
     @Scheduled(fixedDelay = 30 * 1000, initialDelay = 0L)
     public void getInetSocketAddressByApi() {
-        boolean hasException = false;
+        boolean hasException;
+        Object result;
         do {
             Integer count = ipPoolMapper.getCount();
             if (count >= 100) {
                 return;
             }
+
             try {
                 StaticLog.info("{}{}", "getInetSocketAddressByApi", "开始获取...");
                 String mpUrl = "https://proxyapi.mimvp.com/api/fetchopen?orderid=861176314039185103&country_group=1&http_type=2&result_fields=1,2&result_format=json";
@@ -44,9 +43,6 @@ public class MiMvpTask {
                         .execute()
                         .body();
 
-                Object result = "";
-                InetSocketAddress inetSocketAddress;
-
                 if (StringUtils.isNotEmpty(httpsIps)) {
                     if (JSONUtil.isJson(httpsIps)) {
                         JSONObject jsonObject = JSONUtil.parseObj(httpsIps);
@@ -55,12 +51,11 @@ public class MiMvpTask {
                             result = JSONUtil.parseObj(ipPortObj).get("ip:port");
                             if (Validator.isNotEmpty(result)) {
                                 ipPoolMapper.insert(this.buildIpPoolDO(result));
-//                                inetSocketAddress = new InetSocketAddress(result.toString().split(":")[0], Integer.parseInt(result.toString().split(":")[1]));
-//                                inetSocketAddressRedis.sAdd(InetSocketAddressRedis.ip, inetSocketAddress);
                             }
                         }
                     }
                 }
+
                 hasException = false;
                 StaticLog.info("{}{}", "getInetSocketAddressByApi", "结束...");
             } catch (Exception e) {
