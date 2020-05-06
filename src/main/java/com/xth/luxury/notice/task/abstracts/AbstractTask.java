@@ -56,7 +56,8 @@ public abstract class AbstractTask {
      * @param content 内容
      * @param title   标题
      */
-    public void sendNoticeMsg(String content, String title, String msgType) {
+    public void sendNoticeMsg(String content, String summary, String title, String goodsNo, String msgType) {
+        String contentTemple = StrUtil.format("标题: {}\r货号: {}\r摘要: {}\r内容: {}", title, goodsNo, summary, content);
         if (StringUtils.isNotEmpty(content)) {
             if (Validator.isNull(msgType)) {
                 String token = HttpUtil.get("https://oapi.dingtalk.com/gettoken?appkey=dingzmdnhqspdfjbst1l&appsecret=2l4MDbWhm-XIeyCnwaO6D3r8vrJIiKvyuSmspqNl-OL38Xb63zLuVPuegXawCMZr");
@@ -65,7 +66,7 @@ public abstract class AbstractTask {
                     Object access_token = JSONUtil.parseObj(token).get("access_token");
                     String requestParams = "{\"chatid\":\"chat47a302dce354eded2a3592a4f8efe72a\",\"msg\":{\"msgtype\":\"text\",\"text\":{\"content\":\"{}\"}}}";
                     String post = HttpUtil.post(StrUtil.format("https://oapi.dingtalk.com/chat/send?access_token={}", access_token)
-                            , StrUtil.format(requestParams, StrUtil.replace(content, "\"", "\\\"")));
+                            , StrUtil.format(requestParams, StrUtil.replace(contentTemple, "\"", "\\\"")));
                     StaticLog.info("【钉钉通知】成功发送！to={}", post);
                 }
             } else {
