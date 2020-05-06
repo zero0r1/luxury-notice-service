@@ -139,7 +139,6 @@ public class LvArrivedNoticeTask extends AbstractTask {
                 }
             } else {
                 Integer notStockLimit = 20;
-                super.NO_STOCK = 20;
                 if (super.NO_STOCK.equals(notStockLimit)) {
                     super.NO_STOCK = 0;
                     super.sendNoticeMsg(result, "还没货...", "lv 定时提醒.", super.SKU, null);
