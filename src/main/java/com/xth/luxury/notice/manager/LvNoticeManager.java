@@ -8,7 +8,10 @@ import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.StaticLog;
 import com.xth.luxury.notice.domain.GetStocksReqDTO;
+import com.xth.luxury.notice.domain.LvAddGoodsReqDTO;
+import com.xth.luxury.notice.mapper.LvSkuMapper;
 import com.xth.luxury.notice.redis.InetSocketAddressRedis;
+import com.xth.luxury.notice.task.LvArrivedNoticeTask;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +24,8 @@ import java.util.List;
 public class LvNoticeManager {
     @Resource
     private MailService mailService;
+    @Resource
+    private LvSkuMapper lvSkuMapper;
 
     private final String sku = "N41207";
     public final String url = "https://secure.louisvuitton.cn/ajaxsecure/getStockLevel.jsp?storeLang=zhs-cn&pageType=storelocator_section&skuIdList=" + sku + "&null&_=1586758087289";
@@ -176,5 +181,11 @@ public class LvNoticeManager {
     private InetSocketAddress getInetSocketAddress() {
         List<InetSocketAddress> socketAddressList = inetSocketAddressRedis.sPop(InetSocketAddressRedis.ip, 1);
         return !CollectionUtil.isEmpty(socketAddressList) ? socketAddressList.get(0) : null;
+    }
+
+    public Boolean lvAddGoods(LvAddGoodsReqDTO request) {
+        lvSkuMapper.addGoods(request);
+        LvArrivedNoticeTask.hasAddedNewGoods = true;
+        return true;
     }
 }

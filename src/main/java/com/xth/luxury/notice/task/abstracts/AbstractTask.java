@@ -21,9 +21,8 @@ public abstract class AbstractTask {
     public MailService mailService;
     @Resource
     private IpPoolMapper ipPoolMapper;
-    //    @Resource
-//    public InetSocketAddressRedis inetSocketAddressRedis;
     public String SKU = "";
+    public String TITLE = "";
     public String URL = "";
     public String HOME_PAGE = "";
     public Integer NO_STOCK = 0;
@@ -46,8 +45,6 @@ public abstract class AbstractTask {
                     .build();
         }
         return null;
-//        List<InetSocketAddress> socketAddressList = inetSocketAddressRedis.sPop(key, 1);
-//        return !CollectionUtil.isEmpty(socketAddressList) ? socketAddressList.get(0) : null;
     }
 
     /**
@@ -78,4 +75,6 @@ public abstract class AbstractTask {
     public abstract void run();
 
     public abstract void getCookies();
+
+    public abstract void setSkuInfo();
 }
