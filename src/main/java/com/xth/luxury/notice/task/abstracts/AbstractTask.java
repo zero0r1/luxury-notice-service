@@ -15,21 +15,28 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.net.InetSocketAddress;
 
+/**
+ * 功能描述: 任务
+ *
+ * @author shawn
+ * @date 2020/5/7 8:59 上午
+ */
 @Component
 public abstract class AbstractTask {
     @Resource
     public MailService mailService;
     @Resource
     private IpPoolMapper ipPoolMapper;
-    public String SKU = "";
-    public String TITLE = "";
-    public String URL = "";
-    public String HOME_PAGE = "";
-    public Integer NO_STOCK = 0;
-    public String COOKIE = "";
-    public Integer TIME_OUT = 2000;
-    public String TO = "thassange@163.com";
-    public String REDIS_KEY = "";
+    public static String SKU = "";
+    public static String TITLE = "";
+    public static String URL = "";
+    public static String HOME_PAGE = "";
+    public static Integer NO_STOCK = 0;
+    public static String COOKIE = "";
+    public static Integer TIME_OUT = 2000;
+    public static String TO = "thassange@163.com";
+    public static String REDIS_KEY = "";
+    public static Integer NOT_STOCK_LIMIT = 20;
 
     /**
      * 获取地址
