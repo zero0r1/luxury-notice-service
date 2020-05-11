@@ -74,7 +74,7 @@ public abstract class AbstractTask {
                     StaticLog.info("【钉钉通知】成功发送！to={}", post);
                 }
             } else {
-                mailService.sendSimpleTextMail(this.TO, title, content);
+                mailService.sendSimpleTextMail(TO, title, content);
             }
         }
     }
