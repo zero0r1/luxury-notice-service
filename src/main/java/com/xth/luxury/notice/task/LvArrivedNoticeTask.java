@@ -182,7 +182,7 @@ public class LvArrivedNoticeTask extends AbstractTask {
             if (Validator.equal(inStockObj, true)) {
                 goodsAlertCountMap.put(AbstractTask.SKU, 0);
                 StaticLog.info("商品: {} sku: {} - {}", AbstractTask.TITLE, AbstractTask.SKU, "lv 到货啦!");
-                for (int i = 0; i < 3; i++) {
+                for (int i = 0; i < 2; i++) {
                     this.sendDingTalkMessage("lv 到货啦!");
                 }
             } else {
