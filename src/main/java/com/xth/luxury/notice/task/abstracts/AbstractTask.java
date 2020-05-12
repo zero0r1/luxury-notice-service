@@ -36,7 +36,7 @@ public abstract class AbstractTask {
     public static Integer TIME_OUT = 2000;
     public static String TO = "thassange@163.com";
     public static String REDIS_KEY = "";
-    public static Integer NOT_STOCK_LIMIT = 200;
+    public static Integer NOT_STOCK_LIMIT = 500;
 
     /**
      * 获取地址
