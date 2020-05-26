@@ -2,6 +2,7 @@ package com.xth.luxury.notice.task;
 
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.lang.Validator;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
@@ -57,15 +58,17 @@ public class LvArrivedNoticeTask extends AbstractTask {
     }
 
     @Async
-    @Scheduled(fixedDelay = 10 * 1000, initialDelay = 0L)
+    @Scheduled(fixedDelay = 5 * 1000, initialDelay = 0L)
     @Override
     public void run() {
-        StaticLog.info("{} - {}", "任务开始", "10s 一次");
+        StaticLog.info("{} - {}", "任务开始", "5s 一次");
         try {
-            this.setSkuInfo();
-            this.getCookies();
-            this.getSkuStock();
-            this.checkedInStockSendMail();
+            ThreadUtil.execute(() -> {
+                setSkuInfo();
+                getCookies();
+                getSkuStock();
+                checkedInStockSendMail();
+            });
         } catch (Exception e) {
             StaticLog.error("LvArrivedNoticeTask run" + ExceptionUtil.getMessage(e));
         }
