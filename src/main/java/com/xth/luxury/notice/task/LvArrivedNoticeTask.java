@@ -58,7 +58,7 @@ public class LvArrivedNoticeTask extends AbstractTask {
     }
 
     @Async
-    @Scheduled(fixedDelay = 5 * 1000, initialDelay = 0L)
+//    @Scheduled(fixedDelay = 5 * 1000, initialDelay = 0L)
     @Override
     public void run() {
         StaticLog.info("{} - {}", "任务开始", "5s 一次");
