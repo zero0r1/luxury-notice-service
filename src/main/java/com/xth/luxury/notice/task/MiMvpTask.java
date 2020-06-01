@@ -24,7 +24,7 @@ public class MiMvpTask {
     private IpPoolMapper ipPoolMapper;
 
     @Async
-    @Scheduled(fixedDelay = 30 * 1000, initialDelay = 0L)
+//    @Scheduled(fixedDelay = 30 * 1000, initialDelay = 0L)
     public void getInetSocketAddressByApi() {
         boolean hasException;
         Object result;
